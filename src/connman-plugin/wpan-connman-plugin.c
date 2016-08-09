@@ -664,6 +664,57 @@ lowpan_network_remove(struct connman_network *network)
 }
 
 static void
+lowpan_remove_all_disconnected_networks(struct connman_device *device)
+{
+	struct lowpan_device_s *device_info =
+	    (struct lowpan_device_s *)connman_device_get_data(device);
+
+	DBG("%p", device);
+
+	// This function removes all the disconnected networks from the lowpan device.
+	// This is achieved with a simple but effective trick using how scan operation
+	// is implemented in Connman.
+	//
+	// When `scanning` is set to `true` on a Connman device, Connman will mark all
+	// the current networks associated with the device as 'unavailable'. When the
+	// scan finishes and plugin goes through the scan result, it should add any new
+	// networks from scan results. For existing networks, it marks them as 'available'
+	// (using `connman_network_set_available(network)`). At the end, when `scanning`
+	// is set to 'false', Connman will remove all networks which are still marked as
+	// unavailable.
+	//
+	// To remove all disconnected networks, we simply set_scanning(TRUE) followed
+	// by set_scanning(FALSE).
+
+	if (connman_device_get_scanning(device) == TRUE) {
+		goto bail;
+	}
+
+	if (device_info->ncp_state == NCP_STATE_ASSOCIATING) {
+		goto bail;
+	}
+
+	if (device_info->ncp_state == NCP_STATE_COMMISSIONED) {
+		goto bail;
+	}
+
+	if (ncp_state_is_initializing(device_info->ncp_state)) {
+		goto bail;
+	}
+
+	connman_device_set_scanning(device, CONNMAN_SERVICE_TYPE_LOWPAN, TRUE);
+
+	if (device->current_network != NULL) {
+		connman_network_set_available(device->current_network, TRUE);
+	}
+
+	connman_device_set_scanning(device, CONNMAN_SERVICE_TYPE_LOWPAN, FALSE);
+
+bail:
+	return;
+}
+
+static void
 join_finished_callback(
     DBusPendingCall *pending, void* user_data
     )
@@ -715,6 +766,7 @@ bail:
 
 	if (ret == 0) {
 		connman_network_set_connected(network, TRUE);
+		lowpan_remove_all_disconnected_networks(device);
 	}
 
 	return;
@@ -1085,6 +1137,7 @@ lowpan_network_connect(struct connman_network *network)
 			DBG("%p Already connected to THIS network!", network);
 			ret = 0;
 			connman_network_set_connected(network, TRUE);
+			lowpan_remove_all_disconnected_networks(device);
 		} else if(device_info->current_network && 0 == strcmp(connman_network_get_group(device_info->current_network),connman_network_get_group(network))) {
 			DBG("%p Already connected to THIS service!", network);
 			ret = 0;
@@ -1092,6 +1145,7 @@ lowpan_network_connect(struct connman_network *network)
 			device_info->current_network = network;
 			connman_network_ref(device_info->current_network);
 			connman_network_set_connected(network, TRUE);
+			lowpan_remove_all_disconnected_networks(device);
 		} else {
 			DBG("%p Already connected to an entirely different network, %s!", network, connman_network_get_identifier(device_info->current_network));
 			ret = -EINVAL;
@@ -1664,10 +1718,13 @@ lowpan_device_handle_state_change(
 				} else {
 					DBG("Marking Network as connected.");
 					connman_network_set_connected(network, TRUE);
+					lowpan_remove_all_disconnected_networks(device);
 				}
 			} else {
 				DBG("Service/Network already connected.");
 			}
+
+
 		}
 	}
 
