@@ -195,6 +195,34 @@ nl::wpantund::SpinelNCPTaskJoin::vprocess_event(int event, va_list args)
 		require_noerr(ret, on_error);
 	}
 
+	if (mOptions.count(kWPANTUNDProperty_NetworkNodeType)) {
+		spinel_net_role_t role;
+		NodeType node_type;
+
+		node_type = string_to_node_type(any_to_string(mOptions[kWPANTUNDProperty_NetworkNodeType]));
+
+		if ((node_type == END_DEVICE) || (node_type == SLEEPY_END_DEVICE)) {
+			role = SPINEL_NET_ROLE_CHILD;
+		} else if ((node_type == ROUTER) || (node_type == LEADER)) {
+			role = SPINEL_NET_ROLE_ROUTER;
+		} else {
+			ret = kWPANTUNDStatus_InvalidArgument;
+			goto on_error;
+		}
+
+		mNextCommand = SpinelPackData(
+			SPINEL_FRAME_PACK_CMD_PROP_VALUE_SET(SPINEL_DATATYPE_UINT8_S),
+			SPINEL_PROP_NET_DESIRED_ROLE,
+			static_cast<uint8_t>(role)
+		);
+
+		EH_SPAWN(&mSubPT, vprocess_send_command(event, args));
+
+		ret = mNextCommandRet;
+
+		require_noerr(ret, on_error);
+	}
+
 	if (mOptions.count(kWPANTUNDProperty_IPv6MeshLocalAddress)) {
 		{
 			struct in6_addr addr = any_to_ipv6(mOptions[kWPANTUNDProperty_IPv6MeshLocalAddress]);

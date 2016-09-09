@@ -420,6 +420,17 @@ typedef enum
     SPINEL_PROP_NET_REQUIRE_JOIN_EXISTING
                                      = SPINEL_PROP_NET__BEGIN + 9,
 
+    /// Desired role
+    /** Format: `C`
+     *
+     *  This property indicates the desired role (child, router, etc.)
+     *  for the node. If it is set when network stack is not up
+     *  (`PROP_NET_STACK_UP` is `false`), it will take effect next time
+     *  when stack is brought up.
+     *  If stack is already up, it will change the role immediately.
+     */
+    SPINEL_PROP_NET_DESIRED_ROLE     =  SPINEL_PROP_NET__BEGIN + 10, ///< [C]
+
     SPINEL_PROP_NET__END             = 0x50,
 
     SPINEL_PROP_THREAD__BEGIN          = 0x50,
