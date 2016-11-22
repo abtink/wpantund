@@ -165,7 +165,8 @@ SpinelNCPInstance::SpinelNCPInstance(const Settings& settings) :
 {
 	mOutboundBufferLen = 0;
 	mInboundHeader = 0;
-	mDefaultChannelMask = 0x07FFF800;
+	mSupprotedChannels.clear();
+
 	mIsPcapInProgress = false;
 
 	if (!settings.empty()) {
@@ -187,6 +188,7 @@ SpinelNCPInstance::SpinelNCPInstance(const Settings& settings) :
 
 SpinelNCPInstance::~SpinelNCPInstance()
 {
+
 }
 
 
@@ -200,6 +202,21 @@ SpinelNCPControlInterface&
 SpinelNCPInstance::get_control_interface()
 {
 	return mControlInterface;
+}
+
+uint32_t
+SpinelNCPInstance::get_default_channel_mask(void)
+{
+	uint32_t channel_mask = 0;
+	uint16_t i;
+
+	for (i = 0; i < 32; i++) {
+		if (mSupprotedChannels.find(i) != mSupprotedChannels.end()) {
+			channel_mask |= (1 << i);
+		}
+	}
+
+	return channel_mask;
 }
 
 std::set<std::string>
@@ -996,6 +1013,22 @@ SpinelNCPInstance::handle_ncp_spinel_value_is(spinel_prop_key_t key, const uint8
 		if (value != mCurrentNetworkInstance.channel) {
 			mCurrentNetworkInstance.channel = value;
 			signal_property_changed(kWPANTUNDProperty_NCPChannel, mCurrentNetworkInstance.channel);
+		}
+
+	} else if (key == SPINEL_PROP_PHY_CHAN_SUPPORTED) {
+
+		uint8_t channel;
+		spinel_ssize_t len = 0;
+
+		mSupprotedChannels.clear();
+
+		while (value_data_len > 0)
+		{
+			len = spinel_datatype_unpack(value_data_ptr, value_data_len, SPINEL_DATATYPE_UINT8_S, &channel);
+			mSupprotedChannels.insert(channel);
+
+			value_data_ptr += len;
+			value_data_len -= len;
 		}
 
 	} else if (key == SPINEL_PROP_PHY_TX_POWER) {

@@ -20,6 +20,9 @@
 #ifndef __wpantund__SpinelNCPTaskForm__
 #define __wpantund__SpinelNCPTaskForm__
 
+#include <map>
+#include <list>
+
 #include "SpinelNCPTask.h"
 #include "SpinelNCPInstance.h"
 
@@ -43,6 +46,10 @@ public:
 private:
 	ValueMap mOptions;
 	NCPState mLastState;
+	uint8_t mChannel;
+	uint32_t mChannelMask;
+	boost::shared_ptr<SpinelNCPTask> mScanTask;
+	std::map<uint8_t, std::list<WPAN::NetworkInstance> > mScanResults;
 };
 
 }; // namespace wpantund

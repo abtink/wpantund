@@ -26,6 +26,7 @@
 #include <errno.h>
 #include "SpinelNCPTaskForm.h"
 #include "SpinelNCPInstance.h"
+#include "SpinelNCPTaskScan.h"
 #include "any-to.h"
 #include "spinel-extra.h"
 #include "sec-random.h"
@@ -149,47 +150,54 @@ nl::wpantund::SpinelNCPTaskForm::vprocess_event(int event, va_list args)
 	mLastState = mInstance->get_ncp_state();
 	mInstance->change_ncp_state(ASSOCIATING);
 
-	// TODO: We should do a scan to make sure we pick a good channel
-	//       and don't have a panid collision.
-
 	if (mOptions.count(kWPANTUNDProperty_NCPChannel)) {
-		mNextCommand = SpinelPackData(
-			SPINEL_FRAME_PACK_CMD_PROP_VALUE_SET(SPINEL_DATATYPE_UINT8_S),
-			SPINEL_PROP_PHY_CHAN,
-			any_to_int(mOptions[kWPANTUNDProperty_NCPChannel])
-		);
+		mChannel = any_to_int(mOptions[kWPANTUNDProperty_NCPChannel]);
+	} else {
 
-		EH_SPAWN(&mSubPT, vprocess_send_command(event, args));
-
-		ret = mNextCommandRet;
-
-		require_noerr(ret, on_error);
-
-	} else if (mOptions.count(kWPANTUNDProperty_NCPChannelMask)) {
-		{
-			// Randomly pick a channel from the given channel mask for now.
-			// TODO: as stated above, we should scan and pick a quiet channel.
-			int mask(any_to_int(mOptions[kWPANTUNDProperty_NCPChannelMask]));
-			uint8_t channel;
-
-			do {
-				sec_random_fill(&channel, 1);
-				channel = (channel % 32);
-			} while (0 == ((1 << channel) & mask));
-
-			mNextCommand = SpinelPackData(
-				SPINEL_FRAME_PACK_CMD_PROP_VALUE_SET(SPINEL_DATATYPE_UINT8_S),
-				SPINEL_PROP_PHY_CHAN,
-				channel
-			);
+		if (mOptions.count(kWPANTUNDProperty_NCPChannelMask)) {
+			mChannelMask = any_to_int(mOptions[kWPANTUNDProperty_NCPChannelMask]);
+		} else {
+			mChannelMask = 0;
 		}
 
-		EH_SPAWN(&mSubPT, vprocess_send_command(event, args));
+		mScanTask = boost::shared_ptr<SpinelNCPTask>(new SpinelNCPTaskScan(
+			mInstance,
+			NULL,  // May need a callback here
+			mChannelMask
+		));
 
-		ret = mNextCommandRet;
+		// Spawn the task and let it finish and then start over
 
-		require_noerr(ret, on_error);
+
+
+
+
+
+
+
+
+	/* This is how to get the random channel selected
+		do {
+			sec_random_fill(&channel, 1);
+			channel = (channel % 32);
+		} while (0 == ((1 << channel) & mask));
+	*/
+		// FOR NOW HARDCODE THE CHAnNEL
+		mChannel = 11;
 	}
+
+	// Set the channel
+	mNextCommand = SpinelPackData(
+		SPINEL_FRAME_PACK_CMD_PROP_VALUE_SET(SPINEL_DATATYPE_UINT8_S),
+		SPINEL_PROP_PHY_CHAN,
+		mChannel
+	);
+
+	EH_SPAWN(&mSubPT, vprocess_send_command(event, args));
+
+	ret = mNextCommandRet;
+
+	require_noerr(ret, on_error);
 
 	// Turn off promiscuous mode, if it happens to be on
 	mNextCommand = SpinelPackData(

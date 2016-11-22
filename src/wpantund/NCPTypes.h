@@ -23,6 +23,7 @@
 #include <stdint.h>
 #include "time-utils.h"
 #include <string>
+#include <set>
 
 namespace nl {
 namespace wpantund {
