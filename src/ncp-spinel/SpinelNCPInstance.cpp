@@ -385,6 +385,9 @@ SpinelNCPInstance::property_get_value(
 	const std::string& key,
 	CallbackWithStatusArg1 cb
 ) {
+	if (!is_initializing_ncp()) {
+		syslog(LOG_INFO, "property_get_value: key: \"%s\"", key.c_str());
+	}
 
 #define SIMPLE_SPINEL_GET(prop__, type__)                                \
 	start_new_task(SpinelNCPTaskSendCommand::Factory(this)               \
@@ -1100,7 +1103,28 @@ SpinelNCPInstance::property_set_value(
 		syslog(LOG_ERR,"property_set_value: Invalid argument for property \"%s\" (%s)", key.c_str(), x.what());
 		cb(kWPANTUNDStatus_InvalidArgument);
 	}
+}
 
+void
+SpinelNCPInstance::property_insert_value(
+	const std::string& key,
+	const boost::any& value,
+	CallbackWithStatus cb
+) {
+	syslog(LOG_INFO, "property_set_value: key: \"%s\"", key.c_str());
+
+	NCPInstanceBase::property_insert_value(key, value, cb);
+}
+
+void
+SpinelNCPInstance::property_remove_value(
+	const std::string& key,
+	const boost::any& value,
+	CallbackWithStatus cb
+) {
+	syslog(LOG_INFO, "property_set_value: key: \"%s\"", key.c_str());
+
+	NCPInstanceBase::property_remove_value(key, value, cb);
 }
 
 void
