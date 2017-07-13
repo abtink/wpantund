@@ -107,6 +107,10 @@ TunnelIPv6Interface::on_link_state_changed(bool isUp, bool isRunning)
 			for (iter = mAddresses.begin(); iter != mAddresses.end(); ++iter) {
 				IGNORE_RETURN_VALUE(netif_mgmt_add_ipv6_address(mNetifMgmtFD, mInterfaceName.c_str(), iter->s6_addr, 64));
 			}
+
+			for (iter = mMulticastAddresses.begin(); iter != mMulticastAddresses.end(); ++iter) {
+				IGNORE_RETURN_VALUE(netif_mgmt_join_ipv6_multicast_address(mNetifMgmtFD, mInterfaceName.c_str(), iter->s6_addr));
+			}
 		}
 
 		mIsUp = isUp;
@@ -358,6 +362,14 @@ TunnelIPv6Interface::reset(void)
 		remove_address(&addr);
 	}
 
+	// TODO: Remove this
+	/*
+	while (!mMulticastAddresses.empty()) {
+		const struct in6_addr addr(*mMulticastAddresses.begin());
+		leave_multicast_address(&addr);
+	}
+	*/
+
 	set_online(false);
 }
 
@@ -457,6 +469,76 @@ TunnelIPv6Interface::remove_route(const struct in6_addr *route, int prefixlen)
 
 	if (is_online()) {
 		require_noerr_action(netif_mgmt_remove_ipv6_route(mNetifMgmtFD, mInterfaceName.c_str(), route->s6_addr, prefixlen), bail, mLastError = errno);
+	}
+
+	ret = true;
+
+bail:
+	return ret;
+}
+
+bool
+TunnelIPv6Interface::join_multicast_address(const struct in6_addr *addr)
+{
+	bool ret = false;
+
+	require_action(!IN6_IS_ADDR_UNSPECIFIED(addr), bail, mLastError = EINVAL);
+
+	if (!mMulticastAddresses.count(*addr)) {
+		syslog(
+			LOG_INFO,
+		   "TunnelIPv6Interface: Joining multicast address \"%s\" on interface \"%s\".",
+		   in6_addr_to_string(*addr).c_str(),
+		   mInterfaceName.c_str()
+		);
+
+		mMulticastAddresses.insert(*addr);
+
+		if (is_online()) {
+			require_noerr_action(
+				netif_mgmt_join_ipv6_multicast_address(
+					mNetifMgmtFD,
+					mInterfaceName.c_str(),
+					addr->s6_addr
+				),
+				bail,
+				mLastError = errno
+			);
+		}
+	}
+
+	ret = true;
+
+bail:
+	return ret;
+}
+
+bool
+TunnelIPv6Interface::leave_multicast_address(const struct in6_addr *addr)
+{
+	bool ret = false;
+
+	require_action(!IN6_IS_ADDR_UNSPECIFIED(addr), bail, mLastError = EINVAL);
+
+	syslog(
+		LOG_INFO,
+	   "TunnelIPv6Interface: Leaving multicast address \"%s\" on interface \"%s\".",
+	   in6_addr_to_string(*addr).c_str(),
+	   mInterfaceName.c_str()
+	);
+
+	mMulticastAddresses.erase(*addr);
+
+	if (is_online()) {
+		require_noerr_action(
+			netif_mgmt_leave_ipv6_multicast_address(
+				mNetifMgmtFD,
+				mInterfaceName.c_str(),
+				addr->s6_addr
+			),
+			bail,
+			mLastError = errno
+		);
 	}
 
 	ret = true;

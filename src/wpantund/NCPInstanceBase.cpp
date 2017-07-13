@@ -54,8 +54,6 @@ NCPInstanceBase::NCPInstanceBase(const Settings& settings):
 	mPowerFD_PowerOff = '0';
 	mPowerFD_PowerOn = '1';
 
-	mMCFD = -1;
-
 	NLPT_INIT(&mNCPToDriverPumpPT);
 	NLPT_INIT(&mDriverToNCPPumpPT);
 
@@ -189,7 +187,6 @@ NCPInstanceBase::setup_property_supported_by_class(const std::string& prop_name)
 
 NCPInstanceBase::~NCPInstanceBase()
 {
-	close(mMCFD);
 	close(mPowerFD);
 	close(mResetFD);
 }
@@ -265,6 +262,7 @@ NCPInstanceBase::get_supported_property_keys(void) const
 	properties.insert(kWPANTUNDProperty_IPv6MeshLocalAddress);
 	properties.insert(kWPANTUNDProperty_IPv6LinkLocalAddress);
 	properties.insert(kWPANTUNDProperty_IPv6AllAddresses);
+	properties.insert(kWPANTUNDProperty_IPv6MulticastAddresses);
 
 	properties.insert(kWPANTUNDProperty_ThreadOnMeshPrefixes);
 
@@ -464,6 +462,18 @@ NCPInstanceBase::property_get_value(
 			  it++ ) {
 			inet_ntop(AF_INET6,	&it->first,	address_string, sizeof(address_string));
 			result.push_back(std::string(address_string)+ "  " + it->second.get_description());
+		}
+		cb(0, boost::any(result));
+
+	} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_IPv6MulticastAddresses)) {
+		std::list<std::string> result;
+		std::set<struct in6_addr>::const_iterator it;
+		char address_string[INET6_ADDRSTRLEN];
+		for ( it = mMulticastAddresses.begin();
+			  it != mMulticastAddresses.end();
+			  it++ ) {
+			inet_ntop(AF_INET6,	&*it, address_string, sizeof(address_string));
+			result.push_back(std::string(address_string));
 		}
 		cb(0, boost::any(result));
 

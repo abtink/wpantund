@@ -1914,6 +1914,38 @@ SpinelNCPInstance::handle_ncp_spinel_value_is(spinel_prop_key_t key, const uint8
 			}
 		}
 
+	} else if (key == SPINEL_PROP_IPV6_MULTICAST_ADDRESS_TABLE) {
+		std::set<struct in6_addr>::const_iterator iter;
+		std::set<struct in6_addr> multicast_addresses(mMulticastAddresses);
+		const struct in6_addr *addr = NULL;
+		int num_address = 0;
+
+		while (value_data_len > 0) {
+			const uint8_t *entry_ptr = NULL;
+			spinel_size_t entry_len = 0;
+			spinel_ssize_t len = 0;
+			len = spinel_datatype_unpack(value_data_ptr, value_data_len, "D.", &entry_ptr, &entry_len);
+			if (len < 1) {
+				break;
+			}
+
+			addr = reinterpret_cast<const struct in6_addr*>(entry_ptr);
+			syslog(LOG_INFO, "[-NCP-]: Multicast IPv6 address [%d] \"%s\"", num_address, in6_addr_to_string(*addr).c_str());
+			num_address++;
+			multicast_addresses.erase(*addr);
+			handle_ncp_spinel_value_inserted(key, entry_ptr, entry_len);
+
+			value_data_ptr += len;
+			value_data_len -= len;
+		}
+
+		// Since this was the whole list, we need
+		// to remove the addresses that weren't in
+		// the list.
+		for (iter = multicast_addresses.begin(); iter!= multicast_addresses.end(); ++iter) {
+			leave_multicast_address(*iter);
+		}
+
 	} else if (key == SPINEL_PROP_HWADDR) {
 		nl::Data hwaddr(value_data_ptr, value_data_len);
 		if (value_data_len == sizeof(mMACHardwareAddress)) {
@@ -2383,6 +2415,18 @@ SpinelNCPInstance::handle_ncp_spinel_value_inserted(spinel_prop_key_t key, const
 					add_address(*addr, prefix_len, valid_lifetime, preferred_lifetime);
 				}
 			}
+
+	} else if (key == SPINEL_PROP_IPV6_MULTICAST_ADDRESS_TABLE) {
+		struct in6_addr *addr = NULL;
+
+		spinel_datatype_unpack(value_data_ptr, value_data_len, "6", &addr);
+
+		if (addr != NULL
+			&& !IN6_IS_ADDR_UNSPECIFIED(addr)
+		) {
+			join_multicast_address(*addr);
+		}
+
 	} else if (key == SPINEL_PROP_THREAD_ON_MESH_NETS) {
 		struct in6_addr *addr = NULL;
 		uint8_t prefix_len = 0;

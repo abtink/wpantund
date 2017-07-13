@@ -203,3 +203,21 @@ NCPInstanceBase::address_was_removed(const struct in6_addr& addr, int prefix_len
 
 	syslog(LOG_NOTICE, "\"%s\" was removed from \"%s\"", addr_cstr, mPrimaryInterface->get_interface_name().c_str());
 }
+
+void
+NCPInstanceBase::join_multicast_address(const struct in6_addr &address)
+{
+	if (!mMulticastAddresses.count(address)) {
+		mMulticastAddresses.insert(address);
+		mPrimaryInterface->join_multicast_address(&address);
+	}
+}
+
+void
+NCPInstanceBase::leave_multicast_address(const struct in6_addr &address)
+{
+	if (mMulticastAddresses.count(address)) {
+		mMulticastAddresses.erase(address);
+		mPrimaryInterface->leave_multicast_address(&address);
+	}
+}
