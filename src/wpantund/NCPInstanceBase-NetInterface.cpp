@@ -188,47 +188,20 @@ NCPInstanceBase::is_legacy_interface_enabled(void)
 int
 NCPInstanceBase::join_multicast_group(const std::string &group_name)
 {
-	int ret = -1;
-	struct ipv6_mreq imreq;
-	unsigned int value = 1;
+	bool ret = false;
+	struct in6_addr addr;
 	struct hostent *tmp = gethostbyname2(group_name.c_str(), AF_INET6);
-	memset(&imreq, 0, sizeof(imreq));
-
-	if (mMCFD < 0) {
-		mMCFD = socket(AF_INET6, SOCK_DGRAM, 0);
-	}
-
-	require(mMCFD >= 0, skip_mcast);
 
 	require(!h_errno && tmp, skip_mcast);
 	require(tmp->h_length > 1, skip_mcast);
 
-	memcpy(&imreq.ipv6mr_multiaddr.s6_addr, tmp->h_addr_list[0], 16);
+	memcpy(addr.s6_addr, tmp->h_addr_list[0], 16);
 
-	value = 1;
-	ret = setsockopt(
-		mMCFD,
-		IPPROTO_IPV6,
-		IPV6_MULTICAST_LOOP,
-		&value,
-		sizeof(value)
-	);
-	require_noerr(ret, skip_mcast);
-
-	imreq.ipv6mr_interface = if_nametoindex(mPrimaryInterface->get_interface_name().c_str());
-
-	ret = setsockopt(
-		mMCFD,
-		IPPROTO_IPV6,
-		IPV6_JOIN_GROUP,
-		&imreq,
-		sizeof(imreq)
-	);
-	require_noerr(ret, skip_mcast);
+	ret = mPrimaryInterface->join_multicast_address(&addr);
 
 skip_mcast:
 
-	if (ret) {
+	if (ret == false) {
 		syslog(LOG_WARNING, "Failed to join multicast group \"%s\"", group_name.c_str());
 	}
 

@@ -67,6 +67,9 @@ public:
 	bool add_route(const struct in6_addr *route, int prefixlen = 64);
 	bool remove_route(const struct in6_addr *route, int prefixlen = 64);
 
+	bool join_multicast_address(const struct in6_addr *addr);
+	bool leave_multicast_address(const struct in6_addr *addr);
+
 	virtual void reset();
 	virtual ssize_t write(const void* data, size_t len);
 	virtual ssize_t read(void* data, size_t len);
@@ -97,5 +100,6 @@ private:
 	bool mIsUp;
 
 	std::set<struct in6_addr> mAddresses;
+	std::set<struct in6_addr> mMulticastAddresses;
 };
 #endif /* defined(__wpantund__TunnelInterface__) */

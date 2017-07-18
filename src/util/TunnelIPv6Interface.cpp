@@ -465,6 +465,61 @@ bail:
 	return ret;
 }
 
+bool
+TunnelIPv6Interface::join_multicast_address(const struct in6_addr *addr)
+{
+	bool ret = false;
+
+	require_action(!IN6_IS_ADDR_UNSPECIFIED(addr), bail, mLastError = EINVAL);
+
+	if (!mMulticastAddresses.count(*addr)) {
+		syslog(
+			LOG_INFO,
+		   "TunnelIPv6Interface: Joining multicast address \"%s\" on interface \"%s\".",
+		   in6_addr_to_string(*addr).c_str(),
+		   mInterfaceName.c_str()
+		);
+
+		mMulticastAddresses.insert(*addr);
+
+		if (is_online()) {
+			require_noerr_action(netif_mgmt_join_ipv6_multicast_address(mNetifMgmtFD, mInterfaceName.c_str(), addr->s6_addr), bail, mLastError = errno);
+		}
+	}
+
+	ret = true;
+
+bail:
+	return ret;
+}
+
+bool
+TunnelIPv6Interface::leave_multicast_address(const struct in6_addr *addr)
+{
+	bool ret = false;
+
+	require_action(!IN6_IS_ADDR_UNSPECIFIED(addr), bail, mLastError = EINVAL);
+
+	syslog(
+		LOG_INFO,
+	   "TunnelIPv6Interface: Leaving multicast address \"%s\" on interface \"%s\".",
+	   in6_addr_to_string(*addr).c_str(),
+	   mInterfaceName.c_str()
+	);
+
+	mMulticastAddresses.erase(*addr);
+
+	if (netif_mgmt_leave_ipv6_multicast_address(mNetifMgmtFD, mInterfaceName.c_str(), addr->s6_addr) != 0) {
+		mLastError = errno;
+		goto bail;
+	}
+
+	ret = true;
+
+bail:
+	return ret;
+}
+
 ssize_t
 TunnelIPv6Interface::read(void* data, size_t len)
 {

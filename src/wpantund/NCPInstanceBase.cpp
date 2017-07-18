@@ -54,8 +54,6 @@ NCPInstanceBase::NCPInstanceBase(const Settings& settings):
 	mPowerFD_PowerOff = '0';
 	mPowerFD_PowerOn = '1';
 
-	mMCFD = -1;
-
 	NLPT_INIT(&mNCPToDriverPumpPT);
 	NLPT_INIT(&mDriverToNCPPumpPT);
 
@@ -189,7 +187,6 @@ NCPInstanceBase::setup_property_supported_by_class(const std::string& prop_name)
 
 NCPInstanceBase::~NCPInstanceBase()
 {
-	close(mMCFD);
 	close(mPowerFD);
 	close(mResetFD);
 }

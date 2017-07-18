@@ -313,8 +313,6 @@ private:
 	char mPowerFD_PowerOn; //!^ Value for the power being on.
 	char mPowerFD_PowerOff; //!^ Value for the power being off.
 
-	int mMCFD; //!^ File descriptor for multicast stuff.
-
 	bool mWasBusy;
 	cms_t mLastChangedBusy;
 
