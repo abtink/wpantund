@@ -183,8 +183,6 @@ NCPInstanceBase::is_legacy_interface_enabled(void)
 	return false;
 }
 
-
-
 int
 NCPInstanceBase::join_multicast_group(const std::string &group_name)
 {

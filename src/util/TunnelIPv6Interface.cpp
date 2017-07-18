@@ -483,7 +483,15 @@ TunnelIPv6Interface::join_multicast_address(const struct in6_addr *addr)
 		mMulticastAddresses.insert(*addr);
 
 		if (is_online()) {
-			require_noerr_action(netif_mgmt_join_ipv6_multicast_address(mNetifMgmtFD, mInterfaceName.c_str(), addr->s6_addr), bail, mLastError = errno);
+			require_noerr_action(
+				netif_mgmt_join_ipv6_multicast_address(
+					mNetifMgmtFD,
+					mInterfaceName.c_str(),
+					addr->s6_addr
+				),
+				bail,
+				mLastError = errno
+			);
 		}
 	}
 
@@ -509,10 +517,15 @@ TunnelIPv6Interface::leave_multicast_address(const struct in6_addr *addr)
 
 	mMulticastAddresses.erase(*addr);
 
-	if (netif_mgmt_leave_ipv6_multicast_address(mNetifMgmtFD, mInterfaceName.c_str(), addr->s6_addr) != 0) {
-		mLastError = errno;
-		goto bail;
-	}
+	require_noerr_action(
+		netif_mgmt_leave_ipv6_multicast_address(
+			mNetifMgmtFD,
+			mInterfaceName.c_str(),
+			addr->s6_addr
+		),
+		bail,
+		mLastError = errno
+	);
 
 	ret = true;
 

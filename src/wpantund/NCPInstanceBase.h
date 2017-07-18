@@ -159,6 +159,9 @@ public:
 
 	bool lookup_address_for_prefix(struct in6_addr *address, const struct in6_addr &prefix, int prefix_len_in_bits = 64);
 
+	void join_multicast_address(const struct in6_addr &address);
+	void leave_multicast_address(const struct in6_addr &address);
+
 	int join_multicast_group(const std::string &group_name);
 
 public:
@@ -245,6 +248,7 @@ protected:
 
 	std::map<struct in6_addr, GlobalAddressEntry> mGlobalAddresses;
 	std::map<struct in6_addr, GlobalAddressEntry> mOnMeshPrefixes;
+	std::set<struct in6_addr> mMulticastAddresses;
 
 	IPv6PacketMatcherRule mCommissioningRule;
 	IPv6PacketMatcher mInsecureFirewall;
