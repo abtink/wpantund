@@ -362,10 +362,12 @@ TunnelIPv6Interface::reset(void)
 		remove_address(&addr);
 	}
 
+	/*
 	while (!mMulticastAddresses.empty()) {
 		const struct in6_addr addr(*mMulticastAddresses.begin());
 		leave_multicast_address(&addr);
 	}
+	*/
 
 	set_online(false);
 }
