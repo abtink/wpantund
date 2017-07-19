@@ -107,6 +107,10 @@ TunnelIPv6Interface::on_link_state_changed(bool isUp, bool isRunning)
 			for (iter = mAddresses.begin(); iter != mAddresses.end(); ++iter) {
 				IGNORE_RETURN_VALUE(netif_mgmt_add_ipv6_address(mNetifMgmtFD, mInterfaceName.c_str(), iter->s6_addr, 64));
 			}
+
+			for (iter = mMulticastAddresses.begin(); iter != mMulticastAddresses.end(); ++iter) {
+				IGNORE_RETURN_VALUE(netif_mgmt_join_ipv6_multicast_address(mNetifMgmtFD, mInterfaceName.c_str(), iter->s6_addr));
+			}
 		}
 
 		mIsUp = isUp;
@@ -358,6 +362,11 @@ TunnelIPv6Interface::reset(void)
 		remove_address(&addr);
 	}
 
+	while (!mMulticastAddresses.empty()) {
+		const struct in6_addr addr(*mMulticastAddresses.begin());
+		leave_multicast_address(&addr);
+	}
+
 	set_online(false);
 }
 
@@ -517,15 +526,17 @@ TunnelIPv6Interface::leave_multicast_address(const struct in6_addr *addr)
 
 	mMulticastAddresses.erase(*addr);
 
-	require_noerr_action(
-		netif_mgmt_leave_ipv6_multicast_address(
-			mNetifMgmtFD,
-			mInterfaceName.c_str(),
-			addr->s6_addr
-		),
-		bail,
-		mLastError = errno
-	);
+	if (is_online()) {
+		require_noerr_action(
+			netif_mgmt_leave_ipv6_multicast_address(
+				mNetifMgmtFD,
+				mInterfaceName.c_str(),
+				addr->s6_addr
+			),
+			bail,
+			mLastError = errno
+		);
+	}
 
 	ret = true;
 
