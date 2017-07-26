@@ -2353,7 +2353,7 @@ SpinelNCPInstance::refresh_on_mesh_prefix(struct in6_addr *prefix, uint8_t prefi
 	if (!isLocal) {
 		struct in6_addr addr;
 		memcpy(&addr, prefix, sizeof(in6_addr));
-		add_prefix(addr, UINT32_MAX, UINT32_MAX, flags);
+		add_prefix(addr, flags);
 	}
 	if (!isLocal
 	  && ((flags & (SPINEL_NET_FLAG_ON_MESH | SPINEL_NET_FLAG_SLAAC)) == (SPINEL_NET_FLAG_ON_MESH | SPINEL_NET_FLAG_SLAAC))

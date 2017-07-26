@@ -160,7 +160,7 @@ public:
 
 	int join_multicast_group(const std::string &group_name);
 
-	void add_prefix(const struct in6_addr &address, uint32_t valid_lifetime = UINT32_MAX, uint32_t preferred_lifetime = UINT32_MAX, uint8_t flags = 0);
+	void add_prefix(const struct in6_addr &address, uint8_t flags = 0);
 
 public:
 	// ========================================================================
