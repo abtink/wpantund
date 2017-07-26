@@ -146,8 +146,7 @@ public:
 
 	void clear_all_global_entries(void);
 
-	//! Removes all non-permanent global address entries
-	void clear_nonpermanent_global_addresses(void);
+	void clear_ncp_originated_entries(void);
 
 	void restore_global_addresses(void);
 
@@ -160,7 +159,7 @@ public:
 
 	int join_multicast_group(const std::string &group_name);
 
-	void add_prefix(const struct in6_addr &address, uint8_t flags = 0);
+	void add_on_mesh_prefix(const struct in6_addr &address, uint8_t flags = 0);
 
 public:
 	// ========================================================================
@@ -172,8 +171,9 @@ public:
 		kEntryRemove
 	};
 
-	virtual void update_unicast_address_on_ncp(EntryAction action, struct in6_addr& addr);
-	virtual void update_multicast_address_on_ncp(EntryAction action, struct in6_addr& addr);
+	virtual void update_unicast_address_on_ncp(EntryAction action, struct in6_addr &addr);
+	virtual void update_multicast_address_on_ncp(EntryAction action, struct in6_addr &addr);
+	virtual void update_on_mesh_prefix_on_ncp(EntryAction action, struct in6_addr &addr)
 	*/
 
 	// Make these non-virtual and only handled by base class...
@@ -258,26 +258,34 @@ protected:
 
 protected:
 	//==========================================================================
-	// MARK: Global entries: Unicast IPv6 addresses, multicast IPv6 addresses, o
-	// n-mesh prefixes, routes.
+	// MARK: Global entries: Unicast IPv6 addresses, multicast IPv6 addresses,
+	// on-mesh prefixes.
 
 	enum Origin {
 		kOriginThreadNCP,
 		kOriginPrimaryInterface,
 	};
 
-	struct UnicastAddressEntry {
+	class EntryBase {
+	public:
+		EntryBase(Origin origin = kOriginThreadNCP) : mOrigin(origin) { }
+
+		Origin get_origin(void) const { return mOrigin; }
+		bool is_from_interface(void) const { return (mOrigin == kOriginPrimaryInterface); }
+		bool is_from_ncp(void) const { return (mOrigin == kOriginThreadNCP); }
+
+	private:
+		Origin mOrigin;
+	};
+
+	class UnicastAddressEntry : public EntryBase {
 	public:
 		UnicastAddressEntry(Origin origin = kOriginThreadNCP, uint32_t valid_lifetime = UINT32_MAX, uint32_t preferred_lifetime = UINT32_MAX);
 
-		Origin get_origin(void) const { return mOrigin; }
 		uint32_t get_valid_lifetime(void) const { return mValidLifetime; }
 		uint32_t get_preferred_lifetime(void) const { return mPreferredLifetime; }
 		time_t get_valid_lifetime_expiration(void) const { return mValidLifetimeExpiration; }
 		time_t get_preferred_lifetime_expiration(void) const { return mPreferredLifetimeExpiration; }
-
-		bool is_from_interface(void) const { return (mOrigin == kOriginPrimaryInterface); }
-		bool is_from_ncp(void) const { return (mOrigin == kOriginThreadNCP); }
 
 		void set_valid_lifetime(uint32_t valid_lifetime);
 		void set_preferred_lifetime(uint32_t preferred_lifetime);
@@ -285,29 +293,25 @@ protected:
 		std::string get_description(void) const;
 
 	private:
-		Origin mOrigin;
 		uint32_t mValidLifetime;
 		time_t mValidLifetimeExpiration;
 		uint32_t mPreferredLifetime;
 		time_t mPreferredLifetimeExpiration;
 	};
 
-	struct PrefixEntry {
+	class MulticastAddressEntry : public EntryBase {
 	public:
-		PrefixEntry(Origin origin = kOriginThreadNCP, uint8_t flags = 0) : mOrigin(origin), mFlags(flags) { }
-		Origin get_origin(void) const { return mOrigin; }
+		MulticastAddressEntry(Origin origin = kOriginThreadNCP) : EntryBase(origin) { }
+	};
 
-		bool is_from_interface(void) const { return (mOrigin == kOriginPrimaryInterface); }
-		bool is_from_ncp(void) const { return (mOrigin == kOriginThreadNCP); }
-
+	class PrefixEntry : public EntryBase {
+	public:
+		PrefixEntry(Origin origin = kOriginThreadNCP, uint8_t flags = 0) : EntryBase(origin), mFlags(flags) { }
 		uint8_t mFlags;
-
-	private:
-		Origin mOrigin;
 	};
 
 	std::map<struct in6_addr, UnicastAddressEntry> mUnicastAddresses;
-	std::set<struct in6_addr> mMulticastAddresses;
+	std::map<struct in6_addr, MulticastAddressEntry> mMulticastAddresses;
 	std::map<struct in6_addr, PrefixEntry> mOnMeshPrefixes;
 
 protected:

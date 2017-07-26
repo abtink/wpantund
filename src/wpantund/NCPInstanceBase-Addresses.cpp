@@ -34,9 +34,12 @@
 using namespace nl;
 using namespace wpantund;
 
-NCPInstanceBase::UnicastAddressEntry::UnicastAddressEntry(Origin origin, uint32_t valid_lifetime, uint32_t preferred_lifetime)
+NCPInstanceBase::UnicastAddressEntry::UnicastAddressEntry(
+    Origin origin,
+    uint32_t valid_lifetime,
+    uint32_t preferred_lifetime
+) :	EntryBase(origin)
 {
-	mOrigin = origin;
 	set_valid_lifetime(valid_lifetime);
 	set_preferred_lifetime(preferred_lifetime);
 }
@@ -68,7 +71,7 @@ NCPInstanceBase::UnicastAddressEntry::get_description(void) const
 	char c_string[200];
 
 	snprintf(c_string, sizeof(c_string), "valid:%u  preferred:%u origin:%s", mValidLifetime, mPreferredLifetime,
-				mOrigin == kOriginThreadNCP ? "ncp" : "user");
+				get_origin() == kOriginThreadNCP ? "ncp" : "user");
 
 	return std::string(c_string);
 }
@@ -90,18 +93,23 @@ NCPInstanceBase::clear_all_global_entries(void)
 }
 
 void
-NCPInstanceBase::clear_nonpermanent_global_addresses(void)
+NCPInstanceBase::clear_ncp_originated_entries(void)
 {
+	bool did_remove = false;
+
 	std::map<struct in6_addr, UnicastAddressEntry>::iterator iter;
 
-	// We want to remove all of the addresses that did not
-	// originate from interface (i.e. user added).
-	//
-	// This loop looks a little weird because we are mutating
-	// the container as we are iterating through it. Whenever
-	// we mutate the container we have to start over.
+	// We want to remove all of the addresses/prefixes that
+	// did not originate from interface (i.e. not user added).
+
 	do {
-		for (iter = mUnicastAddresses.begin(); iter != mUnicastAddresses.end(); ++iter) {
+		did_remove = false;
+
+		for (
+			std::map<struct in6_addr, UnicastAddressEntry>::iterator iter = mUnicastAddresses.begin();
+			iter != mUnicastAddresses.end();
+			++iter
+		) {
 			// Skip the removal of addresses from interface
 			if (iter->second.is_from_interface()) {
 				continue;
@@ -109,15 +117,12 @@ NCPInstanceBase::clear_nonpermanent_global_addresses(void)
 
 			mPrimaryInterface->remove_address(&iter->first);
 			mUnicastAddresses.erase(iter);
-
-			// The following assignment is needed to avoid
-			// an invalid iterator comparison in the outer loop.
-			iter = mUnicastAddresses.begin();
+			did_remove = true;
 
 			// Break out of the inner loop so that we start over.
 			break;
 		}
-	} while(iter != mUnicastAddresses.end());
+	} while (did_remove);
 }
 
 void
@@ -232,7 +237,7 @@ void
 NCPInstanceBase::join_multicast_address(const struct in6_addr &address)
 {
 	if (!mMulticastAddresses.count(address)) {
-		mMulticastAddresses.insert(address);
+		mMulticastAddresses[address] = MulticastAddressEntry(kOriginThreadNCP);
 		mPrimaryInterface->join_multicast_address(&address);
 	}
 }

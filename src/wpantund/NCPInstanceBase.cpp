@@ -467,7 +467,7 @@ NCPInstanceBase::property_get_value(
 
 	} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_IPv6MulticastAddresses)) {
 		std::list<std::string> result;
-		std::set<struct in6_addr>::const_iterator it;
+		std::map<struct in6_addr, MulticastAddressEntry>::const_iterator it;
 		char address_string[INET6_ADDRSTRLEN];
 		for ( it = mMulticastAddresses.begin();
 			  it != mMulticastAddresses.end();

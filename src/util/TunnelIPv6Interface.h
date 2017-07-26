@@ -70,7 +70,7 @@ public:
 	bool join_multicast_address(const struct in6_addr *addr);
 	bool leave_multicast_address(const struct in6_addr *addr);
 
-	virtual void reset();
+	virtual void reset(void);
 	virtual ssize_t write(const void* data, size_t len);
 	virtual ssize_t read(void* data, size_t len);
 
@@ -86,7 +86,7 @@ public: // Signals
 	boost::signals2::signal<void(bool, bool)> mLinkStateChanged;
 
 private:
-	void setup_signals();
+	void setup_signals(void);
 
 	void on_link_state_changed(bool isUp, bool isRunning);
 private:

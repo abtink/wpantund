@@ -333,7 +333,7 @@ SpinelNCPInstance::vprocess_init(int event, va_list args)
 
 	set_ncp_power(true);
 
-	clear_nonpermanent_global_addresses();
+	clear_ncp_originated_entries();
 
 	mNCPVersionString = "";
 

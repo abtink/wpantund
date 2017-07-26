@@ -1907,15 +1907,15 @@ SpinelNCPInstance::handle_ncp_spinel_value_is(spinel_prop_key_t key, const uint8
 
 		// Since this was the whole list, we need to remove the addresses
 		// which originated from NCP that that weren't in the list.
-		for (iter = unicast_addresses.begin(); iter!= unicast_addresses.end(); ++iter) {
+		for (iter = unicast_addresses.begin(); iter != unicast_addresses.end(); ++iter) {
 			if (iter->second.is_from_ncp()) {
 				remove_unicast_address(iter->first);
 			}
 		}
 
 	} else if (key == SPINEL_PROP_IPV6_MULTICAST_ADDRESS_TABLE) {
-		std::set<struct in6_addr>::const_iterator iter;
-		std::set<struct in6_addr> multicast_addresses(mMulticastAddresses);
+		std::map<struct in6_addr, MulticastAddressEntry>::const_iterator iter;
+		std::map<struct in6_addr, MulticastAddressEntry> multicast_addresses(mMulticastAddresses);
 		const struct in6_addr *addr = NULL;
 		int num_address = 0;
 
@@ -1938,11 +1938,12 @@ SpinelNCPInstance::handle_ncp_spinel_value_is(spinel_prop_key_t key, const uint8
 			value_data_len -= len;
 		}
 
-		// Since this was the whole list, we need
-		// to remove the addresses that weren't in
-		// the list.
-		for (iter = multicast_addresses.begin(); iter!= multicast_addresses.end(); ++iter) {
-			leave_multicast_address(*iter);
+		// Since this was the whole list, we need to remove the addresses
+		// which originated from NCP that that weren't in the list.
+		for (iter = multicast_addresses.begin(); iter != multicast_addresses.end(); ++iter) {
+			if (iter->second.is_from_ncp()) {
+				leave_multicast_address(iter->first);
+			}
 		}
 
 	} else if (key == SPINEL_PROP_HWADDR) {
@@ -2353,7 +2354,7 @@ SpinelNCPInstance::refresh_on_mesh_prefix(struct in6_addr *prefix, uint8_t prefi
 	if (!isLocal) {
 		struct in6_addr addr;
 		memcpy(&addr, prefix, sizeof(in6_addr));
-		add_prefix(addr, flags);
+		add_on_mesh_prefix(addr, flags);
 	}
 	if (!isLocal
 	  && ((flags & (SPINEL_NET_FLAG_ON_MESH | SPINEL_NET_FLAG_SLAAC)) == (SPINEL_NET_FLAG_ON_MESH | SPINEL_NET_FLAG_SLAAC))

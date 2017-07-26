@@ -35,7 +35,7 @@ using namespace nl;
 using namespace wpantund;
 
 void
-NCPInstanceBase::add_prefix(const struct in6_addr &address, uint8_t flags)
+NCPInstanceBase::add_on_mesh_prefix(const struct in6_addr &address, uint8_t flags)
 {
 	if (mOnMeshPrefixes.count(address)) {
 		syslog(LOG_INFO, "Updating IPv6 prefix...");
