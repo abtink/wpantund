@@ -662,13 +662,13 @@ SpinelNCPInstance::update_link_local_address(struct in6_addr *addr)
 	  && (0 != memcmp(mNCPLinkLocalAddress.s6_addr, addr->s6_addr, sizeof(mNCPLinkLocalAddress)))
 	) {
 		if (IN6_IS_ADDR_LINKLOCAL(&mNCPLinkLocalAddress)) {
-			remove_address(mNCPLinkLocalAddress);
+			remove_unicast_address(mNCPLinkLocalAddress);
 		}
 
 		memcpy((void*)mNCPLinkLocalAddress.s6_addr, (void*)addr->s6_addr, sizeof(mNCPLinkLocalAddress));
 
 		if (IN6_IS_ADDR_LINKLOCAL(&mNCPLinkLocalAddress)) {
-			add_address(mNCPLinkLocalAddress);
+			add_unicast_address(mNCPLinkLocalAddress);
 		}
 
 		signal_property_changed(kWPANTUNDProperty_IPv6LinkLocalAddress, in6_addr_to_string(*addr));
@@ -683,11 +683,11 @@ SpinelNCPInstance::update_mesh_local_address(struct in6_addr *addr)
 	 && (0 != memcmp(mNCPMeshLocalAddress.s6_addr, addr->s6_addr, sizeof(mNCPMeshLocalAddress)))
 	) {
 		if (buffer_is_nonzero(mNCPMeshLocalAddress.s6_addr, sizeof(mNCPMeshLocalAddress))) {
-			remove_address(mNCPMeshLocalAddress);
+			remove_unicast_address(mNCPMeshLocalAddress);
 		}
 		memcpy((void*)mNCPMeshLocalAddress.s6_addr, (void*)addr->s6_addr, sizeof(mNCPMeshLocalAddress));
 		signal_property_changed(kWPANTUNDProperty_IPv6MeshLocalAddress, in6_addr_to_string(*addr));
-		add_address(mNCPMeshLocalAddress);
+		add_unicast_address(mNCPMeshLocalAddress);
 	}
 }
 
@@ -699,7 +699,7 @@ SpinelNCPInstance::update_mesh_local_prefix(struct in6_addr *addr)
 	 && (0 != memcmp(mNCPV6Prefix, addr, sizeof(mNCPV6Prefix)))
 	) {
 		if (buffer_is_nonzero(mNCPMeshLocalAddress.s6_addr, sizeof(mNCPMeshLocalAddress))) {
-			remove_address(mNCPMeshLocalAddress);
+			remove_unicast_address(mNCPMeshLocalAddress);
 		}
 		memcpy((void*)mNCPV6Prefix, (void*)addr, sizeof(mNCPV6Prefix));
 		struct in6_addr prefix_addr (mNCPMeshLocalAddress);
@@ -1880,7 +1880,7 @@ SpinelNCPInstance::handle_ncp_spinel_value_is(spinel_prop_key_t key, const uint8
 
 	} else if (key == SPINEL_PROP_IPV6_ADDRESS_TABLE) {
 		std::map<struct in6_addr, UnicastAddressEntry>::const_iterator iter;
-		std::map<struct in6_addr, UnicastAddressEntry> global_addresses(mGlobalAddresses);
+		std::map<struct in6_addr, UnicastAddressEntry> unicast_addresses(mUnicastAddresses);
 		const struct in6_addr *addr = NULL;
 		int num_address = 0;
 
@@ -1896,7 +1896,7 @@ SpinelNCPInstance::handle_ncp_spinel_value_is(spinel_prop_key_t key, const uint8
 			addr = reinterpret_cast<const struct in6_addr*>(entry_ptr);
 			syslog(LOG_INFO, "[-NCP-]: IPv6 address [%d] \"%s\"", num_address, in6_addr_to_string(*addr).c_str());
 			num_address++;
-			global_addresses.erase(*addr);
+			unicast_addresses.erase(*addr);
 			handle_ncp_spinel_value_inserted(key, entry_ptr, entry_len);
 
 			value_data_ptr += len;
@@ -1905,12 +1905,11 @@ SpinelNCPInstance::handle_ncp_spinel_value_is(spinel_prop_key_t key, const uint8
 
 		syslog(LOG_INFO, "[-NCP-]: IPv6 address: Total %d address%s", num_address, (num_address > 1) ? "es" : "");
 
-		// Since this was the whole list, we need
-		// to remove the addresses that weren't in
-		// the list.
-		for (iter = global_addresses.begin(); iter!= global_addresses.end(); ++iter) {
-			if (!iter->second.is_user_added()) {
-				remove_address(iter->first);
+		// Since this was the whole list, we need to remove the addresses
+		// which originated from NCP that that weren't in the list.
+		for (iter = unicast_addresses.begin(); iter!= unicast_addresses.end(); ++iter) {
+			if (iter->second.is_from_ncp()) {
+				remove_unicast_address(iter->first);
 			}
 		}
 
@@ -2412,7 +2411,7 @@ SpinelNCPInstance::handle_ncp_spinel_value_inserted(spinel_prop_key_t key, const
 						update_mesh_local_address(addr);
 					}
 				} else {
-					add_address(*addr, prefix_len, valid_lifetime, preferred_lifetime);
+					add_unicast_address(*addr, prefix_len, valid_lifetime, preferred_lifetime);
 				}
 			}
 
@@ -2421,9 +2420,7 @@ SpinelNCPInstance::handle_ncp_spinel_value_inserted(spinel_prop_key_t key, const
 
 		spinel_datatype_unpack(value_data_ptr, value_data_len, "6", &addr);
 
-		if (addr != NULL
-			&& !IN6_IS_ADDR_UNSPECIFIED(addr)
-		) {
+		if ((addr != NULL) && !IN6_IS_ADDR_UNSPECIFIED(addr)) {
 			join_multicast_address(*addr);
 		}
 

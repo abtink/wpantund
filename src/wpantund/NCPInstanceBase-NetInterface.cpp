@@ -76,11 +76,11 @@ NCPInstanceBase::set_online(bool x)
 	restore_global_addresses();
 
 	if (IN6_IS_ADDR_LINKLOCAL(&mNCPLinkLocalAddress)) {
-		add_address(mNCPLinkLocalAddress);
+		add_unicast_address(mNCPLinkLocalAddress);
 	}
 
 	if (buffer_is_nonzero(mNCPMeshLocalAddress.s6_addr, sizeof(mNCPMeshLocalAddress)))	{
-		add_address(mNCPMeshLocalAddress);
+		add_unicast_address(mNCPMeshLocalAddress);
 	}
 
 	if ((ret == 0) && static_cast<bool>(mLegacyInterface)) {
@@ -157,8 +157,8 @@ NCPInstanceBase::reset_interface(void)
 
 	mPrimaryInterface->reset();
 
-	// The global address table must be cleared upon reset.
-	mGlobalAddresses.clear();
+	// The global entries table (addresses, prefixes) must be cleared upon reset
+	clear_all_global_entries();
 
 	if (static_cast<bool>(mLegacyInterface)) {
 		mLegacyInterface->reset();
@@ -208,9 +208,7 @@ skip_mcast:
 
 
 int
-NCPInstanceBase::set_commissioniner(
-    int seconds, uint8_t traffic_type, in_port_t traffic_port
-    )
+NCPInstanceBase::set_commissioniner(int seconds, uint8_t traffic_type, in_port_t traffic_port)
 {
 	int ret = kWPANTUNDStatus_Ok;
 

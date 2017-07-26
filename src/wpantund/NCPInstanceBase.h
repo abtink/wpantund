@@ -136,18 +136,15 @@ public:
 
 public:
 	// ========================================================================
-	// MARK: On Mesh Prefix Management
+	// MARK: Entry Management (Unicast/Multicast IPv6 addresses, On-mesh prefixes
 
-	void add_prefix(const struct in6_addr &address, uint32_t valid_lifetime = UINT32_MAX, uint32_t preferred_lifetime = UINT32_MAX, uint8_t flags = 0);
+	void add_unicast_address(const struct in6_addr &address, uint8_t prefix = 64, uint32_t valid_lifetime = UINT32_MAX, uint32_t preferred_lifetime = UINT32_MAX);
 
-public:
-	// ========================================================================
-	// MARK: Global Address Management
-
-	void add_address(const struct in6_addr &address, uint8_t prefix = 64, uint32_t valid_lifetime = UINT32_MAX, uint32_t preferred_lifetime = UINT32_MAX);
-	void remove_address(const struct in6_addr &address);
+	void remove_unicast_address(const struct in6_addr &address);
 
 	void refresh_global_addresses(void);
+
+	void clear_all_global_entries(void);
 
 	//! Removes all non-permanent global address entries
 	void clear_nonpermanent_global_addresses(void);
@@ -163,9 +160,23 @@ public:
 
 	int join_multicast_group(const std::string &group_name);
 
+	void add_prefix(const struct in6_addr &address, uint32_t valid_lifetime = UINT32_MAX, uint32_t preferred_lifetime = UINT32_MAX, uint8_t flags = 0);
+
 public:
 	// ========================================================================
 	// MARK: Subclass Hooks
+
+/*
+	enum EntryAction {
+		kEntryAdd,
+		kEntryRemove
+	};
+
+	virtual void update_unicast_address_on_ncp(EntryAction action, struct in6_addr& addr);
+	virtual void update_multicast_address_on_ncp(EntryAction action, struct in6_addr& addr);
+	*/
+
+	// Make these non-virtual and only handled by base class...
 
 	virtual void address_was_added(const struct in6_addr& addr, int prefix_len);
 
@@ -246,6 +257,10 @@ protected:
 	struct nlpt mDriverToNCPPumpPT;
 
 protected:
+	//==========================================================================
+	// MARK: Global entries: Unicast IPv6 addresses, multicast IPv6 addresses, o
+	// n-mesh prefixes, routes.
+
 	enum Origin {
 		kOriginThreadNCP,
 		kOriginPrimaryInterface,
@@ -261,7 +276,8 @@ protected:
 		time_t get_valid_lifetime_expiration(void) const { return mValidLifetimeExpiration; }
 		time_t get_preferred_lifetime_expiration(void) const { return mPreferredLifetimeExpiration; }
 
-		bool is_user_added(void) const { return mOrigin == kOriginPrimaryInterface; }
+		bool is_from_interface(void) const { return (mOrigin == kOriginPrimaryInterface); }
+		bool is_from_ncp(void) const { return (mOrigin == kOriginThreadNCP); }
 
 		void set_valid_lifetime(uint32_t valid_lifetime);
 		void set_preferred_lifetime(uint32_t preferred_lifetime);
@@ -281,13 +297,16 @@ protected:
 		PrefixEntry(Origin origin = kOriginThreadNCP, uint8_t flags = 0) : mOrigin(origin), mFlags(flags) { }
 		Origin get_origin(void) const { return mOrigin; }
 
+		bool is_from_interface(void) const { return (mOrigin == kOriginPrimaryInterface); }
+		bool is_from_ncp(void) const { return (mOrigin == kOriginThreadNCP); }
+
 		uint8_t mFlags;
 
 	private:
 		Origin mOrigin;
 	};
 
-	std::map<struct in6_addr, UnicastAddressEntry> mGlobalAddresses;
+	std::map<struct in6_addr, UnicastAddressEntry> mUnicastAddresses;
 	std::set<struct in6_addr> mMulticastAddresses;
 	std::map<struct in6_addr, PrefixEntry> mOnMeshPrefixes;
 

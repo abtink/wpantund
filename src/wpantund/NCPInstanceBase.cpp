@@ -457,8 +457,8 @@ NCPInstanceBase::property_get_value(
 		std::list<std::string> result;
 		std::map<struct in6_addr, UnicastAddressEntry>::const_iterator it;
 		char address_string[INET6_ADDRSTRLEN];
-		for ( it = mGlobalAddresses.begin();
-			  it != mGlobalAddresses.end();
+		for ( it = mUnicastAddresses.begin();
+			  it != mUnicastAddresses.end();
 			  it++ ) {
 			inet_ntop(AF_INET6,	&it->first,	address_string, sizeof(address_string));
 			result.push_back(std::string(address_string)+ "  " + it->second.get_description());
@@ -864,7 +864,7 @@ NCPInstanceBase::handle_ncp_state_change(NCPState new_ncp_state, NCPState old_nc
 	// and we have global addresses, then need to clear them out.
 	} else if (old_ncp_state == UNINITIALIZED
 		&& new_ncp_state == OFFLINE
-		&& !mGlobalAddresses.empty()
+		&& !mUnicastAddresses.empty()                // ABTIN: CHECK THIS.....
 	) {
 		reset_interface();
 

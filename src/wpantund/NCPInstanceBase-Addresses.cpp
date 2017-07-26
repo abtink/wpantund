@@ -82,80 +82,88 @@ NCPInstanceBase::refresh_global_addresses(void)
 }
 
 void
+NCPInstanceBase::clear_all_global_entries(void)
+{
+	mUnicastAddresses.clear();
+	mMulticastAddresses.clear();
+	mOnMeshPrefixes.clear();
+}
+
+void
 NCPInstanceBase::clear_nonpermanent_global_addresses(void)
 {
 	std::map<struct in6_addr, UnicastAddressEntry>::iterator iter;
 
-	// We want to remove all of the addresses that were
-	// not user-added.
+	// We want to remove all of the addresses that did not
+	// originate from interface (i.e. user added).
 	//
 	// This loop looks a little weird because we are mutating
 	// the container as we are iterating through it. Whenever
 	// we mutate the container we have to start over.
 	do {
-		for (iter = mGlobalAddresses.begin(); iter != mGlobalAddresses.end(); ++iter) {
-			// Skip the removal of user-added address
-			if (iter->second.is_user_added()) {
+		for (iter = mUnicastAddresses.begin(); iter != mUnicastAddresses.end(); ++iter) {
+			// Skip the removal of addresses from interface
+			if (iter->second.is_from_interface()) {
 				continue;
 			}
 
 			mPrimaryInterface->remove_address(&iter->first);
-			mGlobalAddresses.erase(iter);
+			mUnicastAddresses.erase(iter);
 
 			// The following assignment is needed to avoid
 			// an invalid iterator comparison in the outer loop.
-			iter = mGlobalAddresses.begin();
+			iter = mUnicastAddresses.begin();
 
 			// Break out of the inner loop so that we start over.
 			break;
 		}
-	} while(iter != mGlobalAddresses.end());
+	} while(iter != mUnicastAddresses.end());
 }
 
 void
 NCPInstanceBase::restore_global_addresses(void)
 {
 	std::map<struct in6_addr, UnicastAddressEntry>::const_iterator iter;
-	std::map<struct in6_addr, UnicastAddressEntry> global_addresses(mGlobalAddresses);
+	std::map<struct in6_addr, UnicastAddressEntry> global_addresses(mUnicastAddresses);
 
-	mGlobalAddresses.clear();
+	mUnicastAddresses.clear();
 
 	for (iter = global_addresses.begin(); iter!= global_addresses.end(); ++iter) {
-		if (iter->second.is_user_added()) {
+		if (iter->second.is_from_interface()) {
 			address_was_added(iter->first, 64);
 		}
-		mGlobalAddresses.insert(*iter);
+		mUnicastAddresses.insert(*iter);
 
 		mPrimaryInterface->add_address(&iter->first);
 	}
 }
 
 void
-NCPInstanceBase::add_address(const struct in6_addr &address, uint8_t prefix, uint32_t valid_lifetime, uint32_t preferred_lifetime)
+NCPInstanceBase::add_unicast_address(const struct in6_addr &address, uint8_t prefix, uint32_t valid_lifetime, uint32_t preferred_lifetime)
 {
 	UnicastAddressEntry entry = UnicastAddressEntry(kOriginThreadNCP, valid_lifetime, preferred_lifetime);
 
-	if (mGlobalAddresses.count(address)) {
+	if (mUnicastAddresses.count(address)) {
 		syslog(LOG_INFO, "Updating IPv6 Address...");
 	} else {
 		syslog(LOG_INFO, "Adding IPv6 Address...");
 		mPrimaryInterface->add_address(&address);
 	}
 
-	mGlobalAddresses[address] = entry;
+	mUnicastAddresses[address] = entry;
 }
 
 void
-NCPInstanceBase::remove_address(const struct in6_addr &address)
+NCPInstanceBase::remove_unicast_address(const struct in6_addr &address)
 {
-	mGlobalAddresses.erase(address);
+	mUnicastAddresses.erase(address);
 	mPrimaryInterface->remove_address(&address);
 }
 
 bool
 NCPInstanceBase::is_address_known(const struct in6_addr &address)
 {
-	bool ret(mGlobalAddresses.count(address) != 0);
+	bool ret(mUnicastAddresses.count(address) != 0);
 
 	return ret;
 }
@@ -168,7 +176,7 @@ NCPInstanceBase::lookup_address_for_prefix(struct in6_addr *address, const struc
 	in6_addr_apply_mask(masked_prefix, prefix_len_in_bits);
 
 	std::map<struct in6_addr, UnicastAddressEntry>::const_iterator iter;
-	for (iter = mGlobalAddresses.begin(); iter != mGlobalAddresses.end(); ++iter) {
+	for (iter = mUnicastAddresses.begin(); iter != mUnicastAddresses.end(); ++iter) {
 		struct in6_addr iter_prefix(iter->first);
 		in6_addr_apply_mask(iter_prefix, prefix_len_in_bits);
 
@@ -195,8 +203,8 @@ NCPInstanceBase::address_was_added(const struct in6_addr& addr, int prefix_len)
 
 	syslog(LOG_NOTICE, "\"%s\" was added to \"%s\"", addr_cstr, mPrimaryInterface->get_interface_name().c_str());
 
-	if (mGlobalAddresses.count(addr) == 0) {
-		mGlobalAddresses[addr] = UnicastAddressEntry(kOriginPrimaryInterface);;
+	if (mUnicastAddresses.count(addr) == 0) {
+		mUnicastAddresses[addr] = UnicastAddressEntry(kOriginPrimaryInterface);;
 	}
 }
 
@@ -211,10 +219,10 @@ NCPInstanceBase::address_was_removed(const struct in6_addr& addr, int prefix_len
 		sizeof(addr_cstr)
 	);
 
-	if ((mGlobalAddresses.count(addr) != 0)
-	 && (mPrimaryInterface->is_online() || !mGlobalAddresses[addr].is_user_added())
+	if ((mUnicastAddresses.count(addr) != 0)
+	 && (mPrimaryInterface->is_online() || !mUnicastAddresses[addr].is_from_interface())
 	) {
-		mGlobalAddresses.erase(addr);
+		mUnicastAddresses.erase(addr);
 	}
 
 	syslog(LOG_NOTICE, "\"%s\" was removed from \"%s\"", addr_cstr, mPrimaryInterface->get_interface_name().c_str());
