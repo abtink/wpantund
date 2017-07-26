@@ -30,6 +30,7 @@
 #include <algorithm>
 #include "socket-utils.h"
 #include "SuperSocket.h"
+#include "IPv6Helpers.h"
 
 using namespace nl;
 using namespace wpantund;
@@ -198,15 +199,7 @@ NCPInstanceBase::lookup_address_for_prefix(struct in6_addr *address, const struc
 void
 NCPInstanceBase::address_was_added(const struct in6_addr& addr, int prefix_len)
 {
-	char addr_cstr[INET6_ADDRSTRLEN] = "::";
-	inet_ntop(
-		AF_INET6,
-		&addr,
-		addr_cstr,
-		sizeof(addr_cstr)
-	);
-
-	syslog(LOG_NOTICE, "\"%s\" was added to \"%s\"", addr_cstr, mPrimaryInterface->get_interface_name().c_str());
+	syslog(LOG_NOTICE, "\"%s\" was added to \"%s\"", in6_addr_to_string(addr).c_str(), mPrimaryInterface->get_interface_name().c_str());
 
 	if (mUnicastAddresses.count(addr) == 0) {
 		mUnicastAddresses[addr] = UnicastAddressEntry(kOriginPrimaryInterface);;
@@ -216,21 +209,13 @@ NCPInstanceBase::address_was_added(const struct in6_addr& addr, int prefix_len)
 void
 NCPInstanceBase::address_was_removed(const struct in6_addr& addr, int prefix_len)
 {
-	char addr_cstr[INET6_ADDRSTRLEN] = "::";
-	inet_ntop(
-		AF_INET6,
-		&addr,
-		addr_cstr,
-		sizeof(addr_cstr)
-	);
-
 	if ((mUnicastAddresses.count(addr) != 0)
 	 && (mPrimaryInterface->is_online() || !mUnicastAddresses[addr].is_from_interface())
 	) {
 		mUnicastAddresses.erase(addr);
 	}
 
-	syslog(LOG_NOTICE, "\"%s\" was removed from \"%s\"", addr_cstr, mPrimaryInterface->get_interface_name().c_str());
+	syslog(LOG_NOTICE, "\"%s\" was removed from \"%s\"", in6_addr_to_string(addr).c_str(), mPrimaryInterface->get_interface_name().c_str());
 }
 
 void

@@ -32,6 +32,7 @@
 #include "SuperSocket.h"
 #include "wpantund.h"
 #include "any-to.h"
+#include "IPv6Helpers.h"
 
 using namespace nl;
 using namespace wpantund;
@@ -441,13 +442,8 @@ NCPInstanceBase::property_get_value(
 		std::list<std::string> result;
 		std::map<struct in6_addr, PrefixEntry>::const_iterator it;
 		static const char flag_lookup[] = "ppPSDCRM";
-		char address_string[INET6_ADDRSTRLEN];
-
-		for ( it = mOnMeshPrefixes.begin();
-			  it != mOnMeshPrefixes.end();
-			  it++ ) {
-			inet_ntop(AF_INET6,	&it->first,	address_string, sizeof(address_string));
-			result.push_back(std::string(address_string) + "  " + flags_to_string(it->second.mFlags, flag_lookup).c_str());
+		for (it = mOnMeshPrefixes.begin(); it != mOnMeshPrefixes.end(); it++ ) {
+			result.push_back(in6_addr_to_string(it->first) + "  " + flags_to_string(it->second.mFlags, flag_lookup).c_str());
 		}
 		cb(0, boost::any(result));
 
@@ -456,24 +452,16 @@ NCPInstanceBase::property_get_value(
 	) {
 		std::list<std::string> result;
 		std::map<struct in6_addr, UnicastAddressEntry>::const_iterator it;
-		char address_string[INET6_ADDRSTRLEN];
-		for ( it = mUnicastAddresses.begin();
-			  it != mUnicastAddresses.end();
-			  it++ ) {
-			inet_ntop(AF_INET6,	&it->first,	address_string, sizeof(address_string));
-			result.push_back(std::string(address_string)+ "  " + it->second.get_description());
+		for (it = mUnicastAddresses.begin(); it != mUnicastAddresses.end(); it++ ) {
+			result.push_back(in6_addr_to_string(it->first) + "  " + it->second.get_description());
 		}
 		cb(0, boost::any(result));
 
 	} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_IPv6MulticastAddresses)) {
 		std::list<std::string> result;
 		std::map<struct in6_addr, MulticastAddressEntry>::const_iterator it;
-		char address_string[INET6_ADDRSTRLEN];
-		for ( it = mMulticastAddresses.begin();
-			  it != mMulticastAddresses.end();
-			  it++ ) {
-			inet_ntop(AF_INET6,	&*it, address_string, sizeof(address_string));
-			result.push_back(std::string(address_string));
+		for (it = mMulticastAddresses.begin(); it != mMulticastAddresses.end(); it++ ) {
+			result.push_back(in6_addr_to_string(it->first));
 		}
 		cb(0, boost::any(result));
 

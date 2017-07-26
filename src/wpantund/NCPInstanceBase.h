@@ -163,24 +163,34 @@ public:
 
 public:
 	// ========================================================================
-	// MARK: Subclass Hooks
+	// MARK: Subclass Hooks for Entry (IPv6 Address, Prefix, ...) Update
 
-/*
 	enum EntryAction {
 		kEntryAdd,
 		kEntryRemove
 	};
 
+/*
 	virtual void update_unicast_address_on_ncp(EntryAction action, struct in6_addr &addr);
+
 	virtual void update_multicast_address_on_ncp(EntryAction action, struct in6_addr &addr);
-	virtual void update_on_mesh_prefix_on_ncp(EntryAction action, struct in6_addr &addr)
+
+	virtual void update_on_mesh_prefix_on_ncp(EntryAction action, struct in6_addr &addr);
 	*/
 
-	// Make these non-virtual and only handled by base class...
+	//========================================================================
+	// MARKR: Tunnel/Legacy Interface Signal Callbacks
 
 	virtual void address_was_added(const struct in6_addr& addr, int prefix_len);
 
 	virtual void address_was_removed(const struct in6_addr& addr, int prefix_len);
+
+/*
+	virtual void unicast_address_was_added_on_interface(const struct in6_addr& addr, int prefix_len);
+
+	virtual void unicast_address_was_removed_on_interface(const struct in6_addr& addr, int prefix_len);
+*/
+	// ADD multicast ones
 
 	virtual void link_state_changed(bool is_up, bool is_running);
 

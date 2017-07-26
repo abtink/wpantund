@@ -38,6 +38,7 @@
 #include "SpinelNCPTaskGetMsgBufferCounters.h"
 #include "any-to.h"
 #include "spinel-extra.h"
+#include "IPv6Helpers.h"
 
 #define kWPANTUNDProperty_Spinel_CounterPrefix		"NCP:Counter:"
 
@@ -605,17 +606,14 @@ unpack_thread_off_mesh_routes(const uint8_t *data_in, spinel_size_t data_len, bo
 			ret = kWPANTUNDStatus_Failure;
 			break;
 		} else {
-			char address_string[INET6_ADDRSTRLEN];
 			char c_string[200];
 			NCPControlInterface::ExternalRoutePriority priority;
 
 			priority = SpinelNCPControlInterface::convert_flags_to_external_route_priority(flags);
 
-			inet_ntop(AF_INET6,	route_prefix, address_string, sizeof(address_string));
-
 			snprintf(c_string, sizeof(c_string),
 				"%s/%d, stable:%s, local:%s, next_hop:%s, priority:%s (flags:0x%02x)",
-				address_string,
+				in6_addr_to_string(*route_prefix).c_str(),
 				prefix_len,
 				is_stable ? "yes" : "no",
 				is_local ? "yes" : "no",
