@@ -144,14 +144,13 @@ public:
 	// ========================================================================
 	// MARK: Global Address Management
 
-
 	void add_address(const struct in6_addr &address, uint8_t prefix = 64, uint32_t valid_lifetime = UINT32_MAX, uint32_t preferred_lifetime = UINT32_MAX);
 	void remove_address(const struct in6_addr &address);
 
 	void refresh_global_addresses(void);
 
 	//! Removes all non-permanent global address entries
-	void clear_nonpermanent_global_addresses();
+	void clear_nonpermanent_global_addresses(void);
 
 	void restore_global_addresses(void);
 
@@ -246,9 +245,53 @@ protected:
 	struct nlpt mNCPToDriverPumpPT;
 	struct nlpt mDriverToNCPPumpPT;
 
-	std::map<struct in6_addr, GlobalAddressEntry> mGlobalAddresses;
-	std::map<struct in6_addr, GlobalAddressEntry> mOnMeshPrefixes;
+protected:
+	enum Origin {
+		kOriginThreadNCP,
+		kOriginPrimaryInterface,
+	};
+
+	struct UnicastAddressEntry {
+	public:
+		UnicastAddressEntry(Origin origin = kOriginThreadNCP, uint32_t valid_lifetime = UINT32_MAX, uint32_t preferred_lifetime = UINT32_MAX);
+
+		Origin get_origin(void) const { return mOrigin; }
+		uint32_t get_valid_lifetime(void) const { return mValidLifetime; }
+		uint32_t get_preferred_lifetime(void) const { return mPreferredLifetime; }
+		time_t get_valid_lifetime_expiration(void) const { return mValidLifetimeExpiration; }
+		time_t get_preferred_lifetime_expiration(void) const { return mPreferredLifetimeExpiration; }
+
+		bool is_user_added(void) const { return mOrigin == kOriginPrimaryInterface; }
+
+		void set_valid_lifetime(uint32_t valid_lifetime);
+		void set_preferred_lifetime(uint32_t preferred_lifetime);
+
+		std::string get_description(void) const;
+
+	private:
+		Origin mOrigin;
+		uint32_t mValidLifetime;
+		time_t mValidLifetimeExpiration;
+		uint32_t mPreferredLifetime;
+		time_t mPreferredLifetimeExpiration;
+	};
+
+	struct PrefixEntry {
+	public:
+		PrefixEntry(Origin origin = kOriginThreadNCP, uint8_t flags = 0) : mOrigin(origin), mFlags(flags) { }
+		Origin get_origin(void) const { return mOrigin; }
+
+		uint8_t mFlags;
+
+	private:
+		Origin mOrigin;
+	};
+
+	std::map<struct in6_addr, UnicastAddressEntry> mGlobalAddresses;
 	std::set<struct in6_addr> mMulticastAddresses;
+	std::map<struct in6_addr, PrefixEntry> mOnMeshPrefixes;
+
+protected:
 
 	IPv6PacketMatcherRule mCommissioningRule;
 	IPv6PacketMatcher mInsecureFirewall;

@@ -439,7 +439,7 @@ NCPInstanceBase::property_get_value(
 
 	} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_ThreadOnMeshPrefixes)) {
 		std::list<std::string> result;
-		std::map<struct in6_addr, GlobalAddressEntry>::const_iterator it;
+		std::map<struct in6_addr, PrefixEntry>::const_iterator it;
 		static const char flag_lookup[] = "ppPSDCRM";
 		char address_string[INET6_ADDRSTRLEN];
 
@@ -455,7 +455,7 @@ NCPInstanceBase::property_get_value(
 		|| strcaseequal(key.c_str(), kWPANTUNDProperty_DebugIPv6GlobalIPAddressList)
 	) {
 		std::list<std::string> result;
-		std::map<struct in6_addr, GlobalAddressEntry>::const_iterator it;
+		std::map<struct in6_addr, UnicastAddressEntry>::const_iterator it;
 		char address_string[INET6_ADDRSTRLEN];
 		for ( it = mGlobalAddresses.begin();
 			  it != mGlobalAddresses.end();

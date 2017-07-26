@@ -1879,8 +1879,8 @@ SpinelNCPInstance::handle_ncp_spinel_value_is(spinel_prop_key_t key, const uint8
 		update_mesh_local_prefix(addr);
 
 	} else if (key == SPINEL_PROP_IPV6_ADDRESS_TABLE) {
-		std::map<struct in6_addr, GlobalAddressEntry>::const_iterator iter;
-		std::map<struct in6_addr, GlobalAddressEntry> global_addresses(mGlobalAddresses);
+		std::map<struct in6_addr, UnicastAddressEntry>::const_iterator iter;
+		std::map<struct in6_addr, UnicastAddressEntry> global_addresses(mGlobalAddresses);
 		const struct in6_addr *addr = NULL;
 		int num_address = 0;
 
@@ -1909,7 +1909,7 @@ SpinelNCPInstance::handle_ncp_spinel_value_is(spinel_prop_key_t key, const uint8
 		// to remove the addresses that weren't in
 		// the list.
 		for (iter = global_addresses.begin(); iter!= global_addresses.end(); ++iter) {
-			if (!iter->second.mUserAdded) {
+			if (!iter->second.is_user_added()) {
 				remove_address(iter->first);
 			}
 		}

@@ -34,10 +34,47 @@
 using namespace nl;
 using namespace wpantund;
 
-
+NCPInstanceBase::UnicastAddressEntry::UnicastAddressEntry(Origin origin, uint32_t valid_lifetime, uint32_t preferred_lifetime)
+{
+	mOrigin = origin;
+	set_valid_lifetime(valid_lifetime);
+	set_preferred_lifetime(preferred_lifetime);
+}
 
 void
-NCPInstanceBase::refresh_global_addresses()
+NCPInstanceBase::UnicastAddressEntry::set_valid_lifetime(uint32_t valid_lifetime)
+{
+	mValidLifetime = valid_lifetime;
+
+	mValidLifetimeExpiration = (valid_lifetime == UINT32_MAX)
+		? TIME_DISTANT_FUTURE
+		: time_get_monotonic() + valid_lifetime;
+}
+
+void
+NCPInstanceBase::UnicastAddressEntry::set_preferred_lifetime(uint32_t preferred_lifetime)
+{
+	mPreferredLifetime = preferred_lifetime;
+
+	mPreferredLifetimeExpiration = ((mPreferredLifetime == UINT32_MAX)
+		? TIME_DISTANT_FUTURE
+		: time_get_monotonic() + preferred_lifetime
+	);
+}
+
+std::string
+NCPInstanceBase::UnicastAddressEntry::get_description(void) const
+{
+	char c_string[200];
+
+	snprintf(c_string, sizeof(c_string), "valid:%u  preferred:%u origin:%s", mValidLifetime, mPreferredLifetime,
+				mOrigin == kOriginThreadNCP ? "ncp" : "user");
+
+	return std::string(c_string);
+}
+
+void
+NCPInstanceBase::refresh_global_addresses(void)
 {
 	// Here is where we would do any periodic global address bookkeeping,
 	// which doesn't appear to be necessary yet but may become necessary
@@ -45,9 +82,9 @@ NCPInstanceBase::refresh_global_addresses()
 }
 
 void
-NCPInstanceBase::clear_nonpermanent_global_addresses()
+NCPInstanceBase::clear_nonpermanent_global_addresses(void)
 {
-	std::map<struct in6_addr, GlobalAddressEntry>::iterator iter;
+	std::map<struct in6_addr, UnicastAddressEntry>::iterator iter;
 
 	// We want to remove all of the addresses that were
 	// not user-added.
@@ -57,8 +94,8 @@ NCPInstanceBase::clear_nonpermanent_global_addresses()
 	// we mutate the container we have to start over.
 	do {
 		for (iter = mGlobalAddresses.begin(); iter != mGlobalAddresses.end(); ++iter) {
-			// Skip the removal of user-added addresses.
-			if (iter->second.mUserAdded) {
+			// Skip the removal of user-added address
+			if (iter->second.is_user_added()) {
 				continue;
 			}
 
@@ -76,15 +113,15 @@ NCPInstanceBase::clear_nonpermanent_global_addresses()
 }
 
 void
-NCPInstanceBase::restore_global_addresses()
+NCPInstanceBase::restore_global_addresses(void)
 {
-	std::map<struct in6_addr, GlobalAddressEntry>::const_iterator iter;
-	std::map<struct in6_addr, GlobalAddressEntry> global_addresses(mGlobalAddresses);
+	std::map<struct in6_addr, UnicastAddressEntry>::const_iterator iter;
+	std::map<struct in6_addr, UnicastAddressEntry> global_addresses(mGlobalAddresses);
 
 	mGlobalAddresses.clear();
 
 	for (iter = global_addresses.begin(); iter!= global_addresses.end(); ++iter) {
-		if (iter->second.mUserAdded) {
+		if (iter->second.is_user_added()) {
 			address_was_added(iter->first, 64);
 		}
 		mGlobalAddresses.insert(*iter);
@@ -96,26 +133,14 @@ NCPInstanceBase::restore_global_addresses()
 void
 NCPInstanceBase::add_address(const struct in6_addr &address, uint8_t prefix, uint32_t valid_lifetime, uint32_t preferred_lifetime)
 {
-	GlobalAddressEntry entry = GlobalAddressEntry();
+	UnicastAddressEntry entry = UnicastAddressEntry(kOriginThreadNCP, valid_lifetime, preferred_lifetime);
 
 	if (mGlobalAddresses.count(address)) {
 		syslog(LOG_INFO, "Updating IPv6 Address...");
-		entry = mGlobalAddresses[address];
 	} else {
 		syslog(LOG_INFO, "Adding IPv6 Address...");
 		mPrimaryInterface->add_address(&address);
 	}
-
-	entry.mValidLifetime = valid_lifetime;
-	entry.mPreferredLifetime = preferred_lifetime;
-	entry.mValidLifetimeExpiration = ((valid_lifetime == UINT32_MAX)
-		? TIME_DISTANT_FUTURE
-		: time_get_monotonic() + valid_lifetime
-	);
-	entry.mPreferredLifetimeExpiration = ((valid_lifetime == UINT32_MAX)
-		? TIME_DISTANT_FUTURE
-		: time_get_monotonic() + preferred_lifetime
-	);
 
 	mGlobalAddresses[address] = entry;
 }
@@ -142,7 +167,7 @@ NCPInstanceBase::lookup_address_for_prefix(struct in6_addr *address, const struc
 
 	in6_addr_apply_mask(masked_prefix, prefix_len_in_bits);
 
-	std::map<struct in6_addr, GlobalAddressEntry>::const_iterator iter;
+	std::map<struct in6_addr, UnicastAddressEntry>::const_iterator iter;
 	for (iter = mGlobalAddresses.begin(); iter != mGlobalAddresses.end(); ++iter) {
 		struct in6_addr iter_prefix(iter->first);
 		in6_addr_apply_mask(iter_prefix, prefix_len_in_bits);
@@ -171,16 +196,7 @@ NCPInstanceBase::address_was_added(const struct in6_addr& addr, int prefix_len)
 	syslog(LOG_NOTICE, "\"%s\" was added to \"%s\"", addr_cstr, mPrimaryInterface->get_interface_name().c_str());
 
 	if (mGlobalAddresses.count(addr) == 0) {
-		const GlobalAddressEntry entry = {
-			UINT32_MAX,          // .mValidLifetime
-			TIME_DISTANT_FUTURE, // .mValidLifetimeExpiration
-			UINT32_MAX,          // .mPreferredLifetime
-			TIME_DISTANT_FUTURE, // .mPreferredLifetimeExpiration
-			0,                   // .mFlags
-			1,                   // .mUserAdded
-		};
-
-		mGlobalAddresses[addr] = entry;
+		mGlobalAddresses[addr] = UnicastAddressEntry(kOriginPrimaryInterface);;
 	}
 }
 
@@ -196,7 +212,7 @@ NCPInstanceBase::address_was_removed(const struct in6_addr& addr, int prefix_len
 	);
 
 	if ((mGlobalAddresses.count(addr) != 0)
-	 && (mPrimaryInterface->is_online() || !mGlobalAddresses[addr].mUserAdded)
+	 && (mPrimaryInterface->is_online() || !mGlobalAddresses[addr].is_user_added())
 	) {
 		mGlobalAddresses.erase(addr);
 	}

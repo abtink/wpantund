@@ -37,26 +37,11 @@ using namespace wpantund;
 void
 NCPInstanceBase::add_prefix(const struct in6_addr &address, uint32_t valid_lifetime, uint32_t preferred_lifetime, uint8_t flags)
 {
-	GlobalAddressEntry entry = GlobalAddressEntry();
-
 	if (mOnMeshPrefixes.count(address)) {
 		syslog(LOG_INFO, "Updating IPv6 prefix...");
-		entry = mOnMeshPrefixes[address];
 	} else {
 		syslog(LOG_INFO, "Adding IPv6 prefix...");
-		mOnMeshPrefixes.insert(std::pair<struct in6_addr, GlobalAddressEntry>(address, entry));
 	}
 
-	entry.mValidLifetime = valid_lifetime;
-	entry.mPreferredLifetime = preferred_lifetime;
-	entry.mValidLifetimeExpiration = ((valid_lifetime == UINT32_MAX)
-		? TIME_DISTANT_FUTURE
-		: time_get_monotonic() + valid_lifetime
-	);
-	entry.mPreferredLifetimeExpiration = ((valid_lifetime == UINT32_MAX)
-		? TIME_DISTANT_FUTURE
-		: time_get_monotonic() + preferred_lifetime
-	);
-	entry.mFlags = flags;
-	mOnMeshPrefixes[address] = entry;
+	mOnMeshPrefixes[address] = PrefixEntry(kOriginThreadNCP, flags);  // ABTIN: TODO: This need to change base don who added the prefix
 }
