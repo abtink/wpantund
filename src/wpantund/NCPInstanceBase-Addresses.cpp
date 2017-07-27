@@ -90,6 +90,8 @@ NCPInstanceBase::refresh_global_addresses(void)
 void
 NCPInstanceBase::clear_all_global_entries(void)
 {
+	syslog(LOG_INFO, "Clearing all address/prefixes");
+
 	mUnicastAddresses.clear();
 	mMulticastAddresses.clear();
 	mOnMeshPrefixes.clear();
