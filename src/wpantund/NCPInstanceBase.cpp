@@ -66,6 +66,7 @@ NCPInstanceBase::NCPInstanceBase(const Settings& settings):
 	mAutoDeepSleep = false;
 	mIsInitializingNCP = false;
 	mNCPState = UNINITIALIZED;
+	mIsInterfaceOnline = false;
 	mNodeType = UNKNOWN;
 	mFailureCount = 0;
 	mFailureThreshold = 3;

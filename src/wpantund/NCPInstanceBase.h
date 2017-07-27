@@ -124,7 +124,7 @@ public:
 	// ========================================================================
 	// MARK: Network Interface Methods
 
-	int set_online(bool x);
+	int set_online(bool is_online);
 
 	void set_mac_address(const uint8_t addr[8]);
 
@@ -346,6 +346,7 @@ protected:
 private:
 	NCPState mNCPState;
 	bool mIsInitializingNCP;
+	bool mIsInterfaceOnline;
 
 protected:
 	//! This is set to the currently used MAC address (EUI64).

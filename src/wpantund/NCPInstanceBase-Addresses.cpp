@@ -100,29 +100,25 @@ NCPInstanceBase::clear_ncp_originated_entries(void)
 {
 	bool did_remove = false;
 
-	std::map<struct in6_addr, UnicastAddressEntry>::iterator iter;
+	// We remove all of the addresses/prefixes that originate
+	// from the NCP.
 
-	// We want to remove all of the addresses/prefixes that
-	// did not originate from interface (i.e. not user added).
+	syslog(LOG_INFO, "Clearing NCP originated address/prefix entries");
 
 	do {
+		std::map<struct in6_addr, UnicastAddressEntry>::iterator iter;
+
 		did_remove = false;
 
-		for (
-			std::map<struct in6_addr, UnicastAddressEntry>::iterator iter = mUnicastAddresses.begin();
-			iter != mUnicastAddresses.end();
-			++iter
-		) {
-			// Skip the removal of addresses from interface
-			if (iter->second.is_from_interface()) {
+		for (iter = mUnicastAddresses.begin(); iter != mUnicastAddresses.end(); iter++) {
+			if (!iter->second.is_from_ncp()) {
 				continue;
 			}
 
-			mPrimaryInterface->remove_address(&iter->first);
+			syslog(LOG_INFO, "UnicastAddresses: Removing \"%s\" with origin NCP", in6_addr_to_string(iter->first).c_str());
 			mUnicastAddresses.erase(iter);
+			mPrimaryInterface->remove_address(&iter->first, iter->second.get_prefix_len());
 			did_remove = true;
-
-			// Break out of the inner loop so that we start over.
 			break;
 		}
 	} while (did_remove);
@@ -131,8 +127,32 @@ NCPInstanceBase::clear_ncp_originated_entries(void)
 void
 NCPInstanceBase::restore_global_addresses(void)
 {
-	// TODO : ABTIN TO RE_WRITE THIS WHOLE LOGIC
+	syslog(LOG_INFO, "Restoring interface originated addresses/prefix entries");
 
+	clear_ncp_originated_entries();
+
+	for (
+		std::map<struct in6_addr, UnicastAddressEntry>::iterator iter = mUnicastAddresses.begin();
+		iter != mUnicastAddresses.end();
+		++iter
+	) {
+		if (iter->second.is_from_interface())  {
+			update_unicast_address_on_ncp(kEntryAdd, iter->first, iter->second.get_prefix_len());
+			mPrimaryInterface->add_address(&iter->first, iter->second.get_prefix_len());
+		}
+	}
+
+	// Re-add the link local and mesh-local addresses (only if valid).
+	if (IN6_IS_ADDR_LINKLOCAL(&mNCPLinkLocalAddress)) {
+		add_unicast_address(mNCPLinkLocalAddress);
+	}
+
+	if (buffer_is_nonzero(mNCPMeshLocalAddress.s6_addr, sizeof(mNCPMeshLocalAddress)))	{
+		add_unicast_address(mNCPMeshLocalAddress);
+	}
+
+
+/*
 	std::map<struct in6_addr, UnicastAddressEntry>::const_iterator iter;
 	std::map<struct in6_addr, UnicastAddressEntry> global_addresses(mUnicastAddresses);
 
@@ -146,6 +166,7 @@ NCPInstanceBase::restore_global_addresses(void)
 
 		mPrimaryInterface->add_address(&iter->first);
 	}
+*/
 }
 
 void
@@ -154,7 +175,7 @@ NCPInstanceBase::add_unicast_address(const struct in6_addr &address, uint8_t pre
 	if (mUnicastAddresses.count(address) == 0) {
 		syslog(LOG_INFO, "UnicastAddresses: Adding \"%s/%d\" with origin NCP", in6_addr_to_string(address).c_str(), prefix_len);
 		mUnicastAddresses[address] = UnicastAddressEntry(kOriginThreadNCP, prefix_len, valid_lifetime, preferred_lifetime);;
-		mPrimaryInterface->add_address(&address);
+		mPrimaryInterface->add_address(&address, prefix_len);
 	}
 }
 
@@ -164,24 +185,25 @@ NCPInstanceBase::remove_unicast_address(const struct in6_addr &address)
 	if (!mUnicastAddresses.count(address)) {
 		// Do not allow NCP to remove addresses previously added by primary interface.
 		if (mUnicastAddresses[address].is_from_ncp()) {
-			syslog(LOG_INFO, "UnicastAddresses: Removing \"%s\" with origin NCP", in6_addr_to_string(address).c_str());
+			uint8_t prefix_len = mUnicastAddresses[address].get_prefix_len();
+			syslog(LOG_INFO, "UnicastAddresses: Removing \"%s/%d\" with origin NCP", in6_addr_to_string(address).c_str(), prefix_len);
+			mPrimaryInterface->remove_address(&address, prefix_len);
 			mUnicastAddresses.erase(address);
-			mPrimaryInterface->remove_address(&address);
 		}
 	}
 }
 
 bool
-NCPInstanceBase::lookup_address_for_prefix(struct in6_addr *address, const struct in6_addr &prefix, int prefix_len_in_bits)
+NCPInstanceBase::lookup_address_for_prefix(struct in6_addr *address, const struct in6_addr &prefix, int prefix_len)
 {
 	struct in6_addr masked_prefix(prefix);
 
-	in6_addr_apply_mask(masked_prefix, prefix_len_in_bits);
+	in6_addr_apply_mask(masked_prefix, prefix_len);
 
 	std::map<struct in6_addr, UnicastAddressEntry>::const_iterator iter;
 	for (iter = mUnicastAddresses.begin(); iter != mUnicastAddresses.end(); ++iter) {
 		struct in6_addr iter_prefix(iter->first);
-		in6_addr_apply_mask(iter_prefix, prefix_len_in_bits);
+		in6_addr_apply_mask(iter_prefix, prefix_len);
 
 		if (iter_prefix == masked_prefix) {
 			if (address != NULL) {

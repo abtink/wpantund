@@ -67,31 +67,29 @@ NCPInstanceBase::legacy_link_state_changed(bool isUp, bool isRunning)
 }
 
 int
-NCPInstanceBase::set_online(bool x)
+NCPInstanceBase::set_online(bool is_online)
 {
-	int ret;
+	int ret = 0;
 
-	ret = mPrimaryInterface->set_online(x);
+	if (mIsInterfaceOnline != is_online) {
+		mIsInterfaceOnline = is_online;
 
-	restore_global_addresses();
+		ret = mPrimaryInterface->set_online(is_online);
 
-	if (IN6_IS_ADDR_LINKLOCAL(&mNCPLinkLocalAddress)) {
-		add_unicast_address(mNCPLinkLocalAddress);
-	}
+		if (is_online) {
+			restore_global_addresses();
+		}
 
-	if (buffer_is_nonzero(mNCPMeshLocalAddress.s6_addr, sizeof(mNCPMeshLocalAddress)))	{
-		add_unicast_address(mNCPMeshLocalAddress);
-	}
+		if ((ret == 0) && static_cast<bool>(mLegacyInterface)) {
+			if (is_online && mNodeTypeSupportsLegacy) {
+				ret = mLegacyInterface->set_online(true);
 
-	if ((ret == 0) && static_cast<bool>(mLegacyInterface)) {
-		if (x && mNodeTypeSupportsLegacy) {
-			ret = mLegacyInterface->set_online(true);
-
-			if (IN6_IS_ADDR_LINKLOCAL(&mNCPLinkLocalAddress)) {
-				mLegacyInterface->add_address(&mNCPLinkLocalAddress);
+				if (IN6_IS_ADDR_LINKLOCAL(&mNCPLinkLocalAddress)) {
+					mLegacyInterface->add_address(&mNCPLinkLocalAddress);
+				}
+			} else {
+				ret = mLegacyInterface->set_online(false);
 			}
-		} else {
-			ret = mLegacyInterface->set_online(false);
 		}
 	}
 
