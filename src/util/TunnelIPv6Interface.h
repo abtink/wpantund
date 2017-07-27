@@ -79,8 +79,8 @@ public:
 
 public: // Signals
 
-	boost::signals2::signal<void(const struct in6_addr&, int)> mAddressWasAdded;
-	boost::signals2::signal<void(const struct in6_addr&, int)> mAddressWasRemoved;
+	boost::signals2::signal<void(const struct in6_addr&, uint8_t)> mAddressWasAdded;
+	boost::signals2::signal<void(const struct in6_addr&, uint8_t)> mAddressWasRemoved;
 
 	// void linkStateChanged(isUp, isRunning);
 	boost::signals2::signal<void(bool, bool)> mLinkStateChanged;

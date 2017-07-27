@@ -35,7 +35,7 @@
 namespace nl {
 namespace wpantund {
 
-class NCPInstanceBase : public NCPInstance, public EventHandler{
+class NCPInstanceBase : public NCPInstance, public EventHandler {
 public:
 
 	enum {
@@ -150,7 +150,8 @@ public:
 
 	void restore_global_addresses(void);
 
-	bool is_address_known(const struct in6_addr &address);
+	// ABTIN TO REMOVE THIS
+	// bool is_address_known(const struct in6_addr &address);
 
 	bool lookup_address_for_prefix(struct in6_addr *address, const struct in6_addr &prefix, int prefix_len_in_bits = 64);
 
@@ -170,26 +171,19 @@ public:
 		kEntryRemove
 	};
 
-/*
-	virtual void update_unicast_address_on_ncp(EntryAction action, struct in6_addr &addr);
+	virtual void update_unicast_address_on_ncp(EntryAction action, const struct in6_addr &addr, uint8_t prefix_len);
 
-	virtual void update_multicast_address_on_ncp(EntryAction action, struct in6_addr &addr);
+	virtual void update_multicast_address_on_ncp(EntryAction action, const struct in6_addr &addr);
 
-	virtual void update_on_mesh_prefix_on_ncp(EntryAction action, struct in6_addr &addr);
-	*/
+	virtual void update_on_mesh_prefix_on_ncp(EntryAction action, const struct in6_addr &addr);
 
 	//========================================================================
-	// MARKR: Tunnel/Legacy Interface Signal Callbacks
+	// MARK: Tunnel/Legacy Interface Signal Callbacks
 
-	virtual void address_was_added(const struct in6_addr& addr, int prefix_len);
+	void unicast_address_was_added_on_interface(const struct in6_addr& addr, uint8_t prefix_len);
 
-	virtual void address_was_removed(const struct in6_addr& addr, int prefix_len);
+	void unicast_address_was_removed_on_interface(const struct in6_addr& addr, uint8_t prefix_len);
 
-/*
-	virtual void unicast_address_was_added_on_interface(const struct in6_addr& addr, int prefix_len);
-
-	virtual void unicast_address_was_removed_on_interface(const struct in6_addr& addr, int prefix_len);
-*/
 	// ADD multicast ones
 
 	virtual void link_state_changed(bool is_up, bool is_running);
@@ -290,8 +284,14 @@ protected:
 
 	class UnicastAddressEntry : public EntryBase {
 	public:
-		UnicastAddressEntry(Origin origin = kOriginThreadNCP, uint32_t valid_lifetime = UINT32_MAX, uint32_t preferred_lifetime = UINT32_MAX);
+		UnicastAddressEntry(
+			Origin origin = kOriginThreadNCP,
+			uint8_t prefix_len = 64,
+			uint32_t valid_lifetime = UINT32_MAX,
+			uint32_t preferred_lifetime = UINT32_MAX
+		);
 
+		uint8_t get_prefix_len(void) const { return mPrefixLen; }
 		uint32_t get_valid_lifetime(void) const { return mValidLifetime; }
 		uint32_t get_preferred_lifetime(void) const { return mPreferredLifetime; }
 		time_t get_valid_lifetime_expiration(void) const { return mValidLifetimeExpiration; }
@@ -303,6 +303,7 @@ protected:
 		std::string get_description(void) const;
 
 	private:
+		uint8_t mPrefixLen;
 		uint32_t mValidLifetime;
 		time_t mValidLifetimeExpiration;
 		uint32_t mPreferredLifetime;

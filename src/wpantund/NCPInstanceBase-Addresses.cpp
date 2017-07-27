@@ -37,10 +37,12 @@ using namespace wpantund;
 
 NCPInstanceBase::UnicastAddressEntry::UnicastAddressEntry(
     Origin origin,
+    uint8_t prefix_len,
     uint32_t valid_lifetime,
     uint32_t preferred_lifetime
 ) :	EntryBase(origin)
 {
+	mPrefixLen = prefix_len;
 	set_valid_lifetime(valid_lifetime);
 	set_preferred_lifetime(preferred_lifetime);
 }
@@ -129,6 +131,8 @@ NCPInstanceBase::clear_ncp_originated_entries(void)
 void
 NCPInstanceBase::restore_global_addresses(void)
 {
+	// TODO : ABTIN TO RE_WRITE THIS WHOLE LOGIC
+
 	std::map<struct in6_addr, UnicastAddressEntry>::const_iterator iter;
 	std::map<struct in6_addr, UnicastAddressEntry> global_addresses(mUnicastAddresses);
 
@@ -136,7 +140,7 @@ NCPInstanceBase::restore_global_addresses(void)
 
 	for (iter = global_addresses.begin(); iter!= global_addresses.end(); ++iter) {
 		if (iter->second.is_from_interface()) {
-			address_was_added(iter->first, 64);
+			unicast_address_was_added_on_interface(iter->first, 64);
 		}
 		mUnicastAddresses.insert(*iter);
 
@@ -145,33 +149,26 @@ NCPInstanceBase::restore_global_addresses(void)
 }
 
 void
-NCPInstanceBase::add_unicast_address(const struct in6_addr &address, uint8_t prefix, uint32_t valid_lifetime, uint32_t preferred_lifetime)
+NCPInstanceBase::add_unicast_address(const struct in6_addr &address, uint8_t prefix_len, uint32_t valid_lifetime, uint32_t preferred_lifetime)
 {
-	UnicastAddressEntry entry = UnicastAddressEntry(kOriginThreadNCP, valid_lifetime, preferred_lifetime);
-
-	if (mUnicastAddresses.count(address)) {
-		syslog(LOG_INFO, "Updating IPv6 Address...");
-	} else {
-		syslog(LOG_INFO, "Adding IPv6 Address...");
+	if (mUnicastAddresses.count(address) == 0) {
+		syslog(LOG_INFO, "UnicastAddresses: Adding \"%s/%d\" with origin NCP", in6_addr_to_string(address).c_str(), prefix_len);
+		mUnicastAddresses[address] = UnicastAddressEntry(kOriginThreadNCP, prefix_len, valid_lifetime, preferred_lifetime);;
 		mPrimaryInterface->add_address(&address);
 	}
-
-	mUnicastAddresses[address] = entry;
 }
 
 void
 NCPInstanceBase::remove_unicast_address(const struct in6_addr &address)
 {
-	mUnicastAddresses.erase(address);
-	mPrimaryInterface->remove_address(&address);
-}
-
-bool
-NCPInstanceBase::is_address_known(const struct in6_addr &address)
-{
-	bool ret(mUnicastAddresses.count(address) != 0);
-
-	return ret;
+	if (!mUnicastAddresses.count(address)) {
+		// Do not allow NCP to remove addresses previously added by primary interface.
+		if (mUnicastAddresses[address].is_from_ncp()) {
+			syslog(LOG_INFO, "UnicastAddresses: Removing \"%s\" with origin NCP", in6_addr_to_string(address).c_str());
+			mUnicastAddresses.erase(address);
+			mPrimaryInterface->remove_address(&address);
+		}
+	}
 }
 
 bool
@@ -197,25 +194,35 @@ NCPInstanceBase::lookup_address_for_prefix(struct in6_addr *address, const struc
 }
 
 void
-NCPInstanceBase::address_was_added(const struct in6_addr& addr, int prefix_len)
+NCPInstanceBase::unicast_address_was_added_on_interface(const struct in6_addr& addr, uint8_t prefix_len)
 {
-	syslog(LOG_NOTICE, "\"%s\" was added to \"%s\"", in6_addr_to_string(addr).c_str(), mPrimaryInterface->get_interface_name().c_str());
+	std::string addr_str = in6_addr_to_string(addr);
+
+	syslog(LOG_NOTICE, "\"%s\" was added to \"%s\"", addr_str.c_str(), mPrimaryInterface->get_interface_name().c_str());
 
 	if (mUnicastAddresses.count(addr) == 0) {
-		mUnicastAddresses[addr] = UnicastAddressEntry(kOriginPrimaryInterface);;
+		syslog(LOG_INFO, "UnicastAddresses: Adding \"%s/%d\" with origin tunnel interface", in6_addr_to_string(addr).c_str(), prefix_len);
+		mUnicastAddresses[addr] = UnicastAddressEntry(kOriginPrimaryInterface, prefix_len);
+		update_unicast_address_on_ncp(kEntryAdd, addr, prefix_len);
 	}
 }
 
 void
-NCPInstanceBase::address_was_removed(const struct in6_addr& addr, int prefix_len)
+NCPInstanceBase::unicast_address_was_removed_on_interface(const struct in6_addr& addr, uint8_t prefix_len)
 {
-	if ((mUnicastAddresses.count(addr) != 0)
-	 && (mPrimaryInterface->is_online() || !mUnicastAddresses[addr].is_from_interface())
-	) {
-		mUnicastAddresses.erase(addr);
-	}
+	std::string addr_str = in6_addr_to_string(addr);
 
-	syslog(LOG_NOTICE, "\"%s\" was removed from \"%s\"", in6_addr_to_string(addr).c_str(), mPrimaryInterface->get_interface_name().c_str());
+	syslog(LOG_NOTICE, "\"%s\" was removed from \"%s\"", addr_str.c_str(), mPrimaryInterface->get_interface_name().c_str());
+
+	if (mUnicastAddresses.count(addr) != 0) {
+		if (mUnicastAddresses[addr].is_from_interface()) {
+			mUnicastAddresses.erase(addr);
+			syslog(LOG_INFO, "UnicastAddresses: Removing \"%s\" with origin tunnel interface", in6_addr_to_string(addr).c_str());
+			update_unicast_address_on_ncp(kEntryRemove, addr, prefix_len);
+		} else {
+			syslog(LOG_INFO, "Keeping \"%s\" on NCP as it was originated from NCP", addr_str.c_str());
+		}
+	}
 }
 
 void
@@ -235,3 +242,31 @@ NCPInstanceBase::leave_multicast_address(const struct in6_addr &address)
 		mPrimaryInterface->leave_multicast_address(&address);
 	}
 }
+
+void
+NCPInstanceBase::update_unicast_address_on_ncp(EntryAction action, const struct in6_addr &addr, uint8_t prefix_len)
+{
+	// This is intended for sub-classes to update address on NCP
+
+	// NCPInstanceBase provides an empty implementation for plug-ins
+	// that may not want to implement/support this.
+}
+
+void
+NCPInstanceBase::update_multicast_address_on_ncp(EntryAction action, const struct in6_addr &addr)
+{
+	// This is intended for sub-classes to update multicast addresses on NCP
+
+	// NCPInstanceBase provides an empty implementation for plug-ins
+	// that may not want to implement/support this.
+}
+
+void
+NCPInstanceBase::update_on_mesh_prefix_on_ncp(EntryAction action, const struct in6_addr &addr)
+{
+	// This is intended for sub-classes to update on-mesh prefixes on NCP
+
+	// NCPInstanceBase provides an empty implementation for plug-ins
+	// that may not want to implement/support this.
+}
+

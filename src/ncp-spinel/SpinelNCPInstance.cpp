@@ -2597,82 +2597,91 @@ SpinelNCPInstance::handle_ncp_spinel_callback(unsigned int command, const uint8_
 }
 
 void
-SpinelNCPInstance::address_was_added(const struct in6_addr& addr, int prefix_len)
+SpinelNCPInstance::update_unicast_address_on_ncp(EntryAction action, const struct in6_addr &addr, uint8_t prefix_len)
 {
-	if (!is_address_known(addr) && !IN6_IS_ADDR_LINKLOCAL(&addr)) {
-		SpinelNCPTaskSendCommand::Factory factory(this);
-		uint8_t flags = SPINEL_NET_FLAG_SLAAC
-					  | SPINEL_NET_FLAG_ON_MESH
-					  | SPINEL_NET_FLAG_PREFERRED;
-		CallbackWithStatus callback;
+	switch (action)
+	{
+	case kEntryAdd:
+		add_unicast_address_to_ncp(addr, prefix_len);
+		break;
 
-		NCPInstanceBase::address_was_added(addr, prefix_len);
-
-		factory.set_lock_property(SPINEL_PROP_THREAD_ALLOW_LOCAL_NET_DATA_CHANGE);
-
-		callback = boost::bind(&SpinelNCPInstance::check_operation_status, this, "address_was_added()", _1);
-		factory.set_callback(callback);
-
-		factory.add_command(
-			SpinelPackData(
-				SPINEL_FRAME_PACK_CMD_PROP_VALUE_INSERT(
-					SPINEL_DATATYPE_IPv6ADDR_S   // Address
-					SPINEL_DATATYPE_UINT8_S      // Prefix Length
-					SPINEL_DATATYPE_UINT32_S     // Valid Lifetime
-					SPINEL_DATATYPE_UINT32_S     // Preferred Lifetime
-				),
-				SPINEL_PROP_IPV6_ADDRESS_TABLE,
-				&addr,
-				prefix_len,
-				UINT32_MAX,
-				UINT32_MAX
-			)
-		);
-
-		factory.add_command(
-			SpinelPackData(
-				SPINEL_FRAME_PACK_CMD_PROP_VALUE_INSERT(
-					SPINEL_DATATYPE_IPv6ADDR_S   // Address
-					SPINEL_DATATYPE_UINT8_S      // Prefix Length
-					SPINEL_DATATYPE_BOOL_S       // Stable?
-					SPINEL_DATATYPE_UINT8_S      // Flags
-				),
-				SPINEL_PROP_THREAD_ON_MESH_NETS,
-				&addr,
-				prefix_len,
-				true,
-				flags
-			)
-		);
-
-		start_new_task(factory.finish());
+	case kEntryRemove:
+		remove_unicast_address_from_ncp(addr, prefix_len);
+		break;
 	}
 }
 
 void
-SpinelNCPInstance::address_was_removed(const struct in6_addr& addr, int prefix_len)
+SpinelNCPInstance::add_unicast_address_to_ncp(const struct in6_addr &addr, uint8_t prefix_len)
 {
-	if (mPrimaryInterface->is_online() && is_address_known(addr)) {
-		SpinelNCPTaskSendCommand::Factory factory(this);
+	SpinelNCPTaskSendCommand::Factory factory(this);
+	uint8_t flags = SPINEL_NET_FLAG_SLAAC
+				  | SPINEL_NET_FLAG_ON_MESH
+				  | SPINEL_NET_FLAG_PREFERRED;
+	CallbackWithStatus callback;
 
-		factory.set_lock_property(SPINEL_PROP_THREAD_ALLOW_LOCAL_NET_DATA_CHANGE);
+	factory.set_lock_property(SPINEL_PROP_THREAD_ALLOW_LOCAL_NET_DATA_CHANGE);
 
-		factory.add_command(
-			SpinelPackData(
-				SPINEL_FRAME_PACK_CMD_PROP_VALUE_REMOVE(
-					SPINEL_DATATYPE_IPv6ADDR_S   // Address
-					SPINEL_DATATYPE_UINT8_S      // Prefix
-				),
-				SPINEL_PROP_IPV6_ADDRESS_TABLE,
-				&addr,
-				prefix_len
-			)
-		);
+	callback = boost::bind(&SpinelNCPInstance::check_operation_status, this, "add_unicast_address_to_ncp()", _1);
+	factory.set_callback(callback);
 
-		start_new_task(factory.finish());
-	}
+	factory.add_command(
+		SpinelPackData(
+			SPINEL_FRAME_PACK_CMD_PROP_VALUE_INSERT(
+				SPINEL_DATATYPE_IPv6ADDR_S   // Address
+				SPINEL_DATATYPE_UINT8_S      // Prefix Length
+				SPINEL_DATATYPE_UINT32_S     // Valid Lifetime
+				SPINEL_DATATYPE_UINT32_S     // Preferred Lifetime
+			),
+			SPINEL_PROP_IPV6_ADDRESS_TABLE,
+			&addr,
+			prefix_len,
+			UINT32_MAX,
+			UINT32_MAX
+		)
+	);
 
-	NCPInstanceBase::address_was_removed(addr, prefix_len);
+	// ABTIN: TODO: THIS NEEDS TO BE TRIGGRED BY THE BASE CLASS....
+
+	factory.add_command(
+		SpinelPackData(
+			SPINEL_FRAME_PACK_CMD_PROP_VALUE_INSERT(
+				SPINEL_DATATYPE_IPv6ADDR_S   // Address
+				SPINEL_DATATYPE_UINT8_S      // Prefix Length
+				SPINEL_DATATYPE_BOOL_S       // Stable?
+				SPINEL_DATATYPE_UINT8_S      // Flags
+			),
+			SPINEL_PROP_THREAD_ON_MESH_NETS,
+			&addr,
+			prefix_len,
+			true,
+			flags
+		)
+	);
+
+	start_new_task(factory.finish());
+}
+
+void
+SpinelNCPInstance::remove_unicast_address_from_ncp(const struct in6_addr& addr, uint8_t prefix_len)
+{
+	SpinelNCPTaskSendCommand::Factory factory(this);
+
+	factory.set_lock_property(SPINEL_PROP_THREAD_ALLOW_LOCAL_NET_DATA_CHANGE);
+
+	factory.add_command(
+		SpinelPackData(
+			SPINEL_FRAME_PACK_CMD_PROP_VALUE_REMOVE(
+				SPINEL_DATATYPE_IPv6ADDR_S   // Address
+				SPINEL_DATATYPE_UINT8_S      // Prefix
+			),
+			SPINEL_PROP_IPV6_ADDRESS_TABLE,
+			&addr,
+			prefix_len
+		)
+	);
+
+	start_new_task(factory.finish());
 }
 
 void
