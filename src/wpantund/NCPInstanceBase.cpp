@@ -842,6 +842,7 @@ NCPInstanceBase::handle_ncp_state_change(NCPState new_ncp_state, NCPState old_nc
 	// (Special case of InterfaceUp -> InterfaceDown)
 	} else if (ncp_state_is_commissioned(old_ncp_state)
 		&& !ncp_state_is_commissioned(new_ncp_state)
+		&& !ncp_state_is_joining(new_ncp_state)
 		&& !ncp_state_is_sleeping(new_ncp_state)
 		&& (new_ncp_state != UNINITIALIZED)
 	) {
