@@ -854,7 +854,6 @@ NCPInstanceBase::handle_ncp_state_change(NCPState new_ncp_state, NCPState old_nc
 	// and we have global addresses, then need to clear them out.
 	} else if (old_ncp_state == UNINITIALIZED
 		&& new_ncp_state == OFFLINE
-		&& !mUnicastAddresses.empty()                // ABTIN: CHECK THIS.....
 	) {
 		reset_interface();
 
