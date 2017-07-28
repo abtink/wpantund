@@ -652,7 +652,6 @@ SpinelNCPInstance::update_node_type(NodeType new_node_type)
 	}
 }
 
-
 void
 SpinelNCPInstance::update_link_local_address(struct in6_addr *addr)
 {
@@ -665,11 +664,17 @@ SpinelNCPInstance::update_link_local_address(struct in6_addr *addr)
 
 		memcpy((void*)mNCPLinkLocalAddress.s6_addr, (void*)addr->s6_addr, sizeof(mNCPLinkLocalAddress));
 
-		if (IN6_IS_ADDR_LINKLOCAL(&mNCPLinkLocalAddress)) {
-			add_unicast_address(mNCPLinkLocalAddress);
-		}
-
 		signal_property_changed(kWPANTUNDProperty_IPv6LinkLocalAddress, in6_addr_to_string(*addr));
+	}
+
+	// Link-local address is always re-added to ensure that it is present after
+	// a reset where the address table maintained by `NCPInstanceBase` is wiped
+	// but the `mNCPLinkLocalAddress` remains valid. Note that we don't want to
+	// clear `mNcpLinkLocalAddress` so not to emit a property changed signal for
+	// `kWPANTUNDProperty_IPv6LinkLocalAddress` for an NCP reset.
+
+	if (IN6_IS_ADDR_LINKLOCAL(&mNCPLinkLocalAddress)) {
+		add_unicast_address(mNCPLinkLocalAddress);
 	}
 }
 
@@ -687,6 +692,13 @@ SpinelNCPInstance::update_mesh_local_address(struct in6_addr *addr)
 		signal_property_changed(kWPANTUNDProperty_IPv6MeshLocalAddress, in6_addr_to_string(*addr));
 		add_unicast_address(mNCPMeshLocalAddress);
 	}
+
+	// Mesh-local address is always re-added similar to link-local address.
+	// Please see the comment in `update_link_local_address()`.
+
+	if (buffer_is_nonzero(mNCPMeshLocalAddress.s6_addr, sizeof(mNCPMeshLocalAddress))) {
+		add_unicast_address(mNCPMeshLocalAddress);
+	}
 }
 
 void
@@ -696,9 +708,6 @@ SpinelNCPInstance::update_mesh_local_prefix(struct in6_addr *addr)
 	 && buffer_is_nonzero(addr->s6_addr, 8)
 	 && (0 != memcmp(mNCPV6Prefix, addr, sizeof(mNCPV6Prefix)))
 	) {
-		if (buffer_is_nonzero(mNCPMeshLocalAddress.s6_addr, sizeof(mNCPMeshLocalAddress))) {
-			remove_unicast_address(mNCPMeshLocalAddress);
-		}
 		memcpy((void*)mNCPV6Prefix, (void*)addr, sizeof(mNCPV6Prefix));
 		struct in6_addr prefix_addr (mNCPMeshLocalAddress);
 		// Zero out the lower 64 bits.
@@ -2401,15 +2410,11 @@ SpinelNCPInstance::handle_ncp_spinel_value_inserted(spinel_prop_key_t key, const
 				&& !IN6_IS_ADDR_UNSPECIFIED(addr)
 			) {
 				static const uint8_t rloc_bytes[] = {0x00,0x00,0x00,0xFF,0xFE,0x00};
-				if (IN6_IS_ADDR_LINKLOCAL(addr)) {
-					if (0 != memcmp(rloc_bytes, addr->s6_addr+8, sizeof(rloc_bytes))) {
-						update_link_local_address(addr);
-					}
-				} else if (0 == memcmp(mNCPV6Prefix, addr, sizeof(mNCPV6Prefix))) {
-					if (0 != memcmp(rloc_bytes, addr->s6_addr+8, sizeof(rloc_bytes))) {
-						update_mesh_local_address(addr);
-					}
-				} else {
+
+				// Skip RLOC link-local or mesh-local addresses
+				if ((0 != memcmp(rloc_bytes, addr->s6_addr+8, sizeof(rloc_bytes)))
+				    || (!IN6_IS_ADDR_LINKLOCAL(addr) && (0 != memcmp(mNCPV6Prefix, addr, sizeof(mNCPV6Prefix))))
+				) {
 					add_unicast_address(*addr, prefix_len, valid_lifetime, preferred_lifetime);
 				}
 			}

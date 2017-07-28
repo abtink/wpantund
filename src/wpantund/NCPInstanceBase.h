@@ -146,7 +146,7 @@ public:
 
 	void clear_all_global_entries(void);
 
-	void clear_ncp_originated_entries(void);
+	void remove_ncp_originated_addresses(void);
 
 	void restore_interface_originated_entries_on_ncp(void);
 

@@ -92,20 +92,23 @@ NCPInstanceBase::clear_all_global_entries(void)
 {
 	syslog(LOG_INFO, "Clearing all address/prefixes");
 
+	memset(&mNCPLinkLocalAddress, 0, sizeof(mNCPLinkLocalAddress));
+	memset(&mNCPMeshLocalAddress, 0, sizeof(mNCPMeshLocalAddress));
+
 	mUnicastAddresses.clear();
 	mMulticastAddresses.clear();
 	mOnMeshPrefixes.clear();
 }
 
 void
-NCPInstanceBase::clear_ncp_originated_entries(void)
+NCPInstanceBase::remove_ncp_originated_addresses(void)
 {
 	bool did_remove = false;
 
 	// We remove all of the addresses/prefixes that originate
 	// from the NCP.
 
-	syslog(LOG_INFO, "Clearing NCP originated address/prefix entries");
+	syslog(LOG_INFO, "Removing all NCP originated addresses");
 
 	do {
 		std::map<struct in6_addr, UnicastAddressEntry>::iterator iter;
