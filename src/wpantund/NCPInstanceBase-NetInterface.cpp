@@ -77,8 +77,9 @@ NCPInstanceBase::set_online(bool is_online)
 		ret = mPrimaryInterface->set_online(is_online);
 
 		if (is_online) {
-			restore_global_addresses();
+			restore_interface_originated_entries_on_ncp();
 		}
+
 
 		if ((ret == 0) && static_cast<bool>(mLegacyInterface)) {
 			if (is_online && mNodeTypeSupportsLegacy) {

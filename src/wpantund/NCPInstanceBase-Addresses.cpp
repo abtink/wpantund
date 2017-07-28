@@ -127,11 +127,9 @@ NCPInstanceBase::clear_ncp_originated_entries(void)
 }
 
 void
-NCPInstanceBase::restore_global_addresses(void)
+NCPInstanceBase::restore_interface_originated_entries_on_ncp(void)
 {
-	syslog(LOG_INFO, "Restoring interface originated addresses/prefix entries");
-
-	clear_ncp_originated_entries();
+	syslog(LOG_INFO, "Restoring interface originated addresses/prefix entries on NCP");
 
 	for (
 		std::map<struct in6_addr, UnicastAddressEntry>::iterator iter = mUnicastAddresses.begin();
@@ -140,10 +138,13 @@ NCPInstanceBase::restore_global_addresses(void)
 	) {
 		if (iter->second.is_from_interface())  {
 			update_unicast_address_on_ncp(kEntryAdd, iter->first, iter->second.get_prefix_len());
-			mPrimaryInterface->add_address(&iter->first, iter->second.get_prefix_len());
 		}
 	}
+}
 
+// ABTIN: Do we need an equivalent part to do the same on the NCP?????
+
+/*
 	// Re-add the link local and mesh-local addresses (only if valid).
 	if (IN6_IS_ADDR_LINKLOCAL(&mNCPLinkLocalAddress)) {
 		add_unicast_address(mNCPLinkLocalAddress);
@@ -154,7 +155,7 @@ NCPInstanceBase::restore_global_addresses(void)
 	}
 
 
-/*
+
 	std::map<struct in6_addr, UnicastAddressEntry>::const_iterator iter;
 	std::map<struct in6_addr, UnicastAddressEntry> global_addresses(mUnicastAddresses);
 
@@ -169,7 +170,6 @@ NCPInstanceBase::restore_global_addresses(void)
 		mPrimaryInterface->add_address(&iter->first);
 	}
 */
-}
 
 void
 NCPInstanceBase::add_unicast_address(const struct in6_addr &address, uint8_t prefix_len, uint32_t valid_lifetime, uint32_t preferred_lifetime)

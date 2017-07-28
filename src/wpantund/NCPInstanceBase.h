@@ -148,7 +148,7 @@ public:
 
 	void clear_ncp_originated_entries(void);
 
-	void restore_global_addresses(void);
+	void restore_interface_originated_entries_on_ncp(void);
 
 	// ABTIN TO REMOVE THIS
 	// bool is_address_known(const struct in6_addr &address);
