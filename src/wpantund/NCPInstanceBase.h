@@ -136,13 +136,23 @@ public:
 
 public:
 	// ========================================================================
-	// MARK: Entry Management (Unicast/Multicast IPv6 addresses, On-mesh prefixes
+	// MARK: Global address/prefix/route management
 
 	void add_unicast_address(const struct in6_addr &address, uint8_t prefix = 64, uint32_t valid_lifetime = UINT32_MAX, uint32_t preferred_lifetime = UINT32_MAX);
-
 	void remove_unicast_address(const struct in6_addr &address);
 
-	void refresh_global_addresses(void);
+	void join_multicast_address(const struct in6_addr &address);
+	void leave_multicast_address(const struct in6_addr &address);
+	int join_multicast_group(const std::string &group_name);
+
+	void add_on_mesh_prefix(const struct in6_addr &address, uint8_t flags = 0);
+
+	void request_address_filter(void);
+
+	bool lookup_address_for_prefix(struct in6_addr *address, const struct in6_addr &prefix, int prefix_len_in_bits = 64);
+
+protected:
+	void refresh_address_entries(void);
 
 	void clear_all_global_entries(void);
 
@@ -150,21 +160,8 @@ public:
 
 	void restore_interface_originated_entries_on_ncp(void);
 
-	// ABTIN TO REMOVE THIS
-	// bool is_address_known(const struct in6_addr &address);
-
-	bool lookup_address_for_prefix(struct in6_addr *address, const struct in6_addr &prefix, int prefix_len_in_bits = 64);
-
-	void join_multicast_address(const struct in6_addr &address);
-	void leave_multicast_address(const struct in6_addr &address);
-
-	int join_multicast_group(const std::string &group_name);
-
-	void add_on_mesh_prefix(const struct in6_addr &address, uint8_t flags = 0);
-
-public:
 	// ========================================================================
-	// MARK: Subclass Hooks for Entry (IPv6 Address, Prefix, ...) Update
+	// MARK: Subclass hooks related to address/prefix
 
 	enum EntryAction {
 		kEntryAdd,
@@ -177,6 +174,9 @@ public:
 
 	virtual void update_on_mesh_prefix_on_ncp(EntryAction action, const struct in6_addr &addr);
 
+	virtual bool should_filter_address(const struct in6_addr &address, uint8_t prefix_len);
+
+private:
 	//========================================================================
 	// MARK: Tunnel/Legacy Interface Signal Callbacks
 
@@ -184,8 +184,9 @@ public:
 
 	void unicast_address_was_removed_on_interface(const struct in6_addr& addr, uint8_t prefix_len);
 
-	// ADD multicast ones
+	// ABTIN: ADD multicast ones.,,,
 
+protected:
 	virtual void link_state_changed(bool is_up, bool is_running);
 
 	virtual void legacy_link_state_changed(bool is_up, bool is_running);
@@ -324,6 +325,7 @@ protected:
 	std::map<struct in6_addr, UnicastAddressEntry> mUnicastAddresses;
 	std::map<struct in6_addr, MulticastAddressEntry> mMulticastAddresses;
 	std::map<struct in6_addr, PrefixEntry> mOnMeshPrefixes;
+	bool mAddressFilterRequested;
 
 protected:
 

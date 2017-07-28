@@ -78,6 +78,7 @@ NCPInstanceBase::NCPInstanceBase(const Settings& settings):
 	memset(mNCPV6LegacyPrefix, 0, sizeof(mNCPV6LegacyPrefix));
 	memset(mMACAddress, 0, sizeof(mMACAddress));
 	memset(mMACHardwareAddress, 0, sizeof(mMACHardwareAddress));
+	mAddressFilterRequested = false;
 
 	if (!settings.empty()) {
 		Settings::const_iterator iter;

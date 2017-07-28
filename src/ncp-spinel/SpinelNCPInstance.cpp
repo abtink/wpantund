@@ -2405,19 +2405,10 @@ SpinelNCPInstance::handle_ncp_spinel_value_inserted(spinel_prop_key_t key, const
 
 			spinel_datatype_unpack(value_data_ptr, value_data_len, "6CLL", &addr, &prefix_len, &valid_lifetime, &preferred_lifetime);
 
-			if (addr != NULL
-				&& buffer_is_nonzero(addr->s6_addr, 8)
-				&& !IN6_IS_ADDR_UNSPECIFIED(addr)
-			) {
-				static const uint8_t rloc_bytes[] = {0x00,0x00,0x00,0xFF,0xFE,0x00};
-
-				// Skip RLOC link-local or mesh-local addresses
-				if ((0 != memcmp(rloc_bytes, addr->s6_addr+8, sizeof(rloc_bytes)))
-				    || (!IN6_IS_ADDR_LINKLOCAL(addr) && (0 != memcmp(mNCPV6Prefix, addr, sizeof(mNCPV6Prefix))))
-				) {
-					add_unicast_address(*addr, prefix_len, valid_lifetime, preferred_lifetime);
-				}
+			if (addr != NULL) {
+				add_unicast_address(*addr, prefix_len, valid_lifetime, preferred_lifetime);
 			}
+
 
 	} else if (key == SPINEL_PROP_IPV6_MULTICAST_ADDRESS_TABLE) {
 		struct in6_addr *addr = NULL;
@@ -2599,6 +2590,29 @@ SpinelNCPInstance::handle_ncp_spinel_callback(unsigned int command, const uint8_
 	}
 
 	process_event(EVENT_NCP(command), cmd_data_ptr[0], cmd_data_ptr, cmd_data_len);
+}
+
+bool
+SpinelNCPInstance::should_filter_address(const struct in6_addr &addr, uint8_t prefix_len)
+{
+	static const uint8_t rloc_bytes[] = {0x00,0x00,0x00,0xFF,0xFE,0x00};
+	bool should_filter = NCPInstanceBase::should_filter_address(addr, prefix_len);
+
+	// Filter RLOC link-local or mesh-local addresses
+
+	if (0 == memcmp(rloc_bytes, addr.s6_addr + 8, sizeof(rloc_bytes))) {
+		if (IN6_IS_ADDR_LINKLOCAL(&addr)) {
+			should_filter = true;
+		}
+
+		if (buffer_is_nonzero(mNCPV6Prefix, sizeof(mNCPV6Prefix))
+		    && (0 == memcmp(mNCPV6Prefix, &addr, sizeof(mNCPV6Prefix)))
+		) {
+			should_filter = true;
+		}
+	}
+
+	return should_filter;
 }
 
 void

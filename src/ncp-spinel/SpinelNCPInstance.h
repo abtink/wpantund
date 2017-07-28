@@ -140,7 +140,9 @@ protected:
 	void handle_ncp_spinel_value_removed(spinel_prop_key_t key, const uint8_t* value_data_ptr, spinel_size_t value_data_len);
 	void handle_ncp_state_change(NCPState new_ncp_state, NCPState old_ncp_state);
 
+	virtual bool should_filter_address(const struct in6_addr &address, uint8_t prefix_len);
 	virtual void update_unicast_address_on_ncp(EntryAction action, const struct in6_addr &addr, uint8_t prefix_len);
+
 	void add_unicast_address_to_ncp(const struct in6_addr &addr, uint8_t prefix_len);
 	void remove_unicast_address_from_ncp(const struct in6_addr& addr, uint8_t prefix_len);
 
@@ -156,7 +158,6 @@ private:
 	void update_link_local_address(struct in6_addr *addr);
 	void update_mesh_local_address(struct in6_addr *addr);
 	void update_mesh_local_prefix(struct in6_addr *addr);
-
 
 
 public:

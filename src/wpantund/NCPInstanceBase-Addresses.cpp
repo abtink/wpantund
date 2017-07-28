@@ -80,17 +80,34 @@ NCPInstanceBase::UnicastAddressEntry::get_description(void) const
 }
 
 void
-NCPInstanceBase::refresh_global_addresses(void)
+NCPInstanceBase::refresh_address_entries(void)
 {
-	// Here is where we would do any periodic global address bookkeeping,
-	// which doesn't appear to be necessary yet but may become necessary
-	// in the future.
+	// If a re-run of address filtering was requested, go through the
+	// entire list and check if they need to be filtered.
+
+	if (mAddressFilterRequested) {
+		mAddressFilterRequested = false;
+
+		for (
+			std::map<struct in6_addr, UnicastAddressEntry>::iterator iter = mUnicastAddresses.begin();
+			iter != mUnicastAddresses.end();
+			++iter
+		) {
+			if (should_filter_address(iter->first, iter->second.get_prefix_len())) {
+				syslog(LOG_INFO, "UnicastAddresses: Filtering \"%s/%d\" and removing it",
+				       in6_addr_to_string(iter->first).c_str(), iter->second.get_prefix_len());
+				remove_unicast_address(iter->first);
+			}
+		}
+	}
 }
 
 void
 NCPInstanceBase::clear_all_global_entries(void)
 {
-	syslog(LOG_INFO, "Clearing all address/prefixes");
+	syslog(LOG_INFO, "Removing all address/prefixes");
+
+	//ABTIN TODO: Go through and remove the addresses from primary interface
 
 	memset(&mNCPLinkLocalAddress, 0, sizeof(mNCPLinkLocalAddress));
 	memset(&mNCPMeshLocalAddress, 0, sizeof(mNCPMeshLocalAddress));
@@ -145,42 +162,18 @@ NCPInstanceBase::restore_interface_originated_entries_on_ncp(void)
 	}
 }
 
-// ABTIN: Do we need an equivalent part to do the same on the NCP?????
-
-/*
-	// Re-add the link local and mesh-local addresses (only if valid).
-	if (IN6_IS_ADDR_LINKLOCAL(&mNCPLinkLocalAddress)) {
-		add_unicast_address(mNCPLinkLocalAddress);
-	}
-
-	if (buffer_is_nonzero(mNCPMeshLocalAddress.s6_addr, sizeof(mNCPMeshLocalAddress)))	{
-		add_unicast_address(mNCPMeshLocalAddress);
-	}
-
-
-
-	std::map<struct in6_addr, UnicastAddressEntry>::const_iterator iter;
-	std::map<struct in6_addr, UnicastAddressEntry> global_addresses(mUnicastAddresses);
-
-	mUnicastAddresses.clear();
-
-	for (iter = global_addresses.begin(); iter!= global_addresses.end(); ++iter) {
-		if (iter->second.is_from_interface()) {
-			unicast_address_was_added_on_interface(iter->first, 64);
-		}
-		mUnicastAddresses.insert(*iter);
-
-		mPrimaryInterface->add_address(&iter->first);
-	}
-*/
-
 void
 NCPInstanceBase::add_unicast_address(const struct in6_addr &address, uint8_t prefix_len, uint32_t valid_lifetime, uint32_t preferred_lifetime)
 {
 	if (mUnicastAddresses.count(address) == 0) {
-		syslog(LOG_INFO, "UnicastAddresses: Adding \"%s/%d\" with origin NCP", in6_addr_to_string(address).c_str(), prefix_len);
-		mUnicastAddresses[address] = UnicastAddressEntry(kOriginThreadNCP, prefix_len, valid_lifetime, preferred_lifetime);;
-		mPrimaryInterface->add_address(&address, prefix_len);
+		if (should_filter_address(address, prefix_len))	{
+			syslog(LOG_INFO, "UnicastAddresses: Filtering \"%s/%d\" with origin NCP. Address list remains unchanged.",
+			       in6_addr_to_string(address).c_str(), prefix_len);
+		} else {
+			syslog(LOG_INFO, "UnicastAddresses: Adding \"%s/%d\" with origin NCP", in6_addr_to_string(address).c_str(), prefix_len);
+			mUnicastAddresses[address] = UnicastAddressEntry(kOriginThreadNCP, prefix_len, valid_lifetime, preferred_lifetime);;
+			mPrimaryInterface->add_address(&address, prefix_len);
+		}
 	}
 }
 
@@ -268,6 +261,12 @@ NCPInstanceBase::leave_multicast_address(const struct in6_addr &address)
 		mMulticastAddresses.erase(address);
 		mPrimaryInterface->leave_multicast_address(&address);
 	}
+}
+
+bool
+NCPInstanceBase::should_filter_address(const struct in6_addr &address, uint8_t prefix_len)
+{
+	return IN6_IS_ADDR_UNSPECIFIED(&address);
 }
 
 void
