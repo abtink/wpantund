@@ -68,13 +68,19 @@ NCPInstanceBase::UnicastAddressEntry::set_preferred_lifetime(uint32_t preferred_
 	);
 }
 
+
 std::string
 NCPInstanceBase::UnicastAddressEntry::get_description(void) const
 {
 	char c_string[200];
 
-	snprintf(c_string, sizeof(c_string), "valid:%u  preferred:%u origin:%s", mValidLifetime, mPreferredLifetime,
-				get_origin() == kOriginThreadNCP ? "ncp" : "user");
+	if ((mValidLifetime == UINT32_MAX) && (mPreferredLifetime == UINT32_MAX)) {
+		snprintf(c_string, sizeof(c_string), "origin:%s, valid:forever, preferred:forever",
+		         get_origin() == kOriginThreadNCP ? "ncp" : "user");
+	} else {
+		snprintf(c_string, sizeof(c_string), "origin:%s, valid:%u, preferred:%u",
+		         get_origin() == kOriginThreadNCP ? "ncp" : "user", mValidLifetime, mPreferredLifetime);
+	}
 
 	return std::string(c_string);
 }
@@ -180,10 +186,7 @@ void
 NCPInstanceBase::add_unicast_address(const struct in6_addr &address, uint8_t prefix_len, uint32_t valid_lifetime, uint32_t preferred_lifetime)
 {
 	if (!mUnicastAddresses.count(address)) {
-		if (should_filter_address(address, prefix_len))	{
-			syslog(LOG_INFO, "UnicastAddresses: Filtering \"%s/%d\" with origin NCP. Address list remains unchanged.",
-			       in6_addr_to_string(address).c_str(), prefix_len);
-		} else {
+		if (!should_filter_address(address, prefix_len)) {
 			syslog(LOG_INFO, "UnicastAddresses: Adding \"%s/%d\" with origin NCP", in6_addr_to_string(address).c_str(), prefix_len);
 			mUnicastAddresses[address] = UnicastAddressEntry(kOriginThreadNCP, prefix_len, valid_lifetime, preferred_lifetime);;
 			mPrimaryInterface->add_address(&address, prefix_len);
