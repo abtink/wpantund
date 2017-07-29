@@ -691,6 +691,11 @@ SpinelNCPInstance::update_mesh_local_address(struct in6_addr *addr)
 		memcpy((void*)mNCPMeshLocalAddress.s6_addr, (void*)addr->s6_addr, sizeof(mNCPMeshLocalAddress));
 		signal_property_changed(kWPANTUNDProperty_IPv6MeshLocalAddress, in6_addr_to_string(*addr));
 		add_unicast_address(mNCPMeshLocalAddress);
+
+		// Updating mesh-local address will also change the mesh-local prefix
+		// If mesh-local prefix get changed, we request a re-filtering of
+		// addresses to remove any previously added mesh-local RLOC addresses
+		request_address_filter();
 	}
 
 	// Mesh-local address is always re-added similar to link-local address.
@@ -713,6 +718,9 @@ SpinelNCPInstance::update_mesh_local_prefix(struct in6_addr *addr)
 		// Zero out the lower 64 bits.
 		memset(prefix_addr.s6_addr+8, 0, 8);
 		signal_property_changed(kWPANTUNDProperty_IPv6MeshLocalPrefix, in6_addr_to_string(prefix_addr) + "/64");
+
+		// If mesh-local prefix get changed, we request a re-filtering of
+		// address to remove any previously added mesh-local RLOC addresses
 		request_address_filter();
 	}
 }

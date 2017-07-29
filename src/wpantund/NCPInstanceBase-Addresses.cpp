@@ -173,7 +173,7 @@ NCPInstanceBase::restore_interface_originated_entries_on_ncp(void)
 void
 NCPInstanceBase::add_unicast_address(const struct in6_addr &address, uint8_t prefix_len, uint32_t valid_lifetime, uint32_t preferred_lifetime)
 {
-	if (mUnicastAddresses.count(address) == 0) {
+	if (!mUnicastAddresses.count(address)) {
 		if (should_filter_address(address, prefix_len))	{
 			syslog(LOG_INFO, "UnicastAddresses: Filtering \"%s/%d\" with origin NCP. Address list remains unchanged.",
 			       in6_addr_to_string(address).c_str(), prefix_len);
@@ -188,9 +188,10 @@ NCPInstanceBase::add_unicast_address(const struct in6_addr &address, uint8_t pre
 void
 NCPInstanceBase::remove_unicast_address(const struct in6_addr &address)
 {
-	if (!mUnicastAddresses.count(address)) {
+	if (mUnicastAddresses.count(address)) {
 		// Do not allow NCP to remove addresses previously added by primary interface.
 		if (mUnicastAddresses[address].is_from_ncp()) {
+
 			uint8_t prefix_len = mUnicastAddresses[address].get_prefix_len();
 			syslog(LOG_INFO, "UnicastAddresses: Removing \"%s/%d\" with origin NCP", in6_addr_to_string(address).c_str(), prefix_len);
 			mPrimaryInterface->remove_address(&address, prefix_len);
