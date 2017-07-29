@@ -713,6 +713,7 @@ SpinelNCPInstance::update_mesh_local_prefix(struct in6_addr *addr)
 		// Zero out the lower 64 bits.
 		memset(prefix_addr.s6_addr+8, 0, 8);
 		signal_property_changed(kWPANTUNDProperty_IPv6MeshLocalPrefix, in6_addr_to_string(prefix_addr) + "/64");
+		request_address_filter();
 	}
 }
 

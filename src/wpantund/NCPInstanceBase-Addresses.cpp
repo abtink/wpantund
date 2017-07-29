@@ -80,6 +80,12 @@ NCPInstanceBase::UnicastAddressEntry::get_description(void) const
 }
 
 void
+NCPInstanceBase::request_address_filter(void)
+{
+	mAddressFilterRequested = true;
+}
+
+void
 NCPInstanceBase::refresh_address_entries(void)
 {
 	// If a re-run of address filtering was requested, go through the
@@ -87,6 +93,8 @@ NCPInstanceBase::refresh_address_entries(void)
 
 	if (mAddressFilterRequested) {
 		mAddressFilterRequested = false;
+
+		syslog(LOG_INFO, "UnicastAddresses: Re-running all addresses through filter");
 
 		for (
 			std::map<struct in6_addr, UnicastAddressEntry>::iterator iter = mUnicastAddresses.begin();
