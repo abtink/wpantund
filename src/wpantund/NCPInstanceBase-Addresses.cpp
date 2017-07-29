@@ -115,7 +115,13 @@ NCPInstanceBase::clear_all_global_entries(void)
 {
 	syslog(LOG_INFO, "Removing all address/prefixes");
 
-	//ABTIN TODO: Go through and remove the addresses from primary interface
+	for (
+		std::map<struct in6_addr, UnicastAddressEntry>::iterator iter = mUnicastAddresses.begin();
+		iter != mUnicastAddresses.end();
+		++iter
+	) {
+		mPrimaryInterface->remove_address(&iter->first, iter->second.get_prefix_len());
+	}
 
 	memset(&mNCPLinkLocalAddress, 0, sizeof(mNCPLinkLocalAddress));
 	memset(&mNCPMeshLocalAddress, 0, sizeof(mNCPMeshLocalAddress));

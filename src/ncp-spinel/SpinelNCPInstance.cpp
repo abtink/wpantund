@@ -2648,6 +2648,8 @@ SpinelNCPInstance::add_unicast_address_to_ncp(const struct in6_addr &addr, uint8
 				  | SPINEL_NET_FLAG_PREFERRED;
 	CallbackWithStatus callback;
 
+	syslog(LOG_NOTICE, "Adding address \"%s/%d\" to NCP", in6_addr_to_string(addr).c_str(), prefix_len);
+
 	factory.set_lock_property(SPINEL_PROP_THREAD_ALLOW_LOCAL_NET_DATA_CHANGE);
 
 	callback = boost::bind(&SpinelNCPInstance::check_operation_status, this, "add_unicast_address_to_ncp()", _1);
@@ -2694,6 +2696,8 @@ void
 SpinelNCPInstance::remove_unicast_address_from_ncp(const struct in6_addr& addr, uint8_t prefix_len)
 {
 	SpinelNCPTaskSendCommand::Factory factory(this);
+
+	syslog(LOG_NOTICE, "Removing address \"%s/%d\" from NCP", in6_addr_to_string(addr).c_str(), prefix_len);
 
 	factory.set_lock_property(SPINEL_PROP_THREAD_ALLOW_LOCAL_NET_DATA_CHANGE);
 

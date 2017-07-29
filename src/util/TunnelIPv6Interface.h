@@ -98,8 +98,5 @@ private:
 
 	bool mIsRunning;
 	bool mIsUp;
-
-	std::set<struct in6_addr> mAddresses;
-	std::set<struct in6_addr> mMulticastAddresses;
 };
 #endif /* defined(__wpantund__TunnelInterface__) */
