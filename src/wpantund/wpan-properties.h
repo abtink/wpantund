@@ -104,6 +104,7 @@
 #define kWPANTUNDProperty_ThreadDeviceMode                      "Thread:DeviceMode"
 #define kWPANTUNDProperty_ThreadOffMeshRoutes                   "Thread:OffMeshRoutes"
 #define kWPANTUNDProperty_ThreadOnMeshPrefixes                  "Thread:OnMeshPrefixes"
+#define kWPANTUNDProperty_ThreadRouterRoleEnabled               "Thread:RouterRole:Enabled"
 
 #define kWPANTUNDProperty_OpenThreadLogLevel                    "OpenThread:LogLevel"
 #define kWPANTUNDProperty_OpenThreadSteeringDataAddress         "OpenThread:SteeringData:Address"
