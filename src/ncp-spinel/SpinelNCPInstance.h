@@ -163,6 +163,7 @@ private:
 	void update_link_local_address(struct in6_addr *addr);
 	void update_mesh_local_address(struct in6_addr *addr);
 	void update_mesh_local_prefix(struct in6_addr *addr);
+	void check_router_role_change_status(int status);
 
 public:
 	static bool setup_property_supported_by_class(const std::string& prop_name);
@@ -269,6 +270,8 @@ private:
 
 	// Task management
 	std::list<boost::shared_ptr<SpinelNCPTask> > mTaskQueue;
+
+	bool mDisableRouterRoleAfterAttach;
 
 }; // class SpinelNCPInstance
 

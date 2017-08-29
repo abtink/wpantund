@@ -179,6 +179,7 @@ SpinelNCPInstance::SpinelNCPInstance(const Settings& settings) :
 	mXPANIDWasExplicitlySet = false;
 	mThreadMode = 0;
 	mIsCommissioned = false;
+	mDisableRouterRoleAfterAttach = false;
 
 	if (!settings.empty()) {
 		int status;
@@ -1089,6 +1090,10 @@ SpinelNCPInstance::property_get_value(
 		} else {
 			NCPInstanceBase::property_get_value(key, cb);
 		}
+
+	} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_NestLabs_DisableRouterRoleAfterAttach)) {
+		cb(kWPANTUNDStatus_Ok, mDisableRouterRoleAfterAttach);
+
 	} else {
 		NCPInstanceBase::property_get_value(key, cb);
 	}
@@ -1579,6 +1584,10 @@ SpinelNCPInstance::property_set_value(
 					.add_command(command)
 					.finish()
 					);
+
+		} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_NestLabs_DisableRouterRoleAfterAttach)) {
+			mDisableRouterRoleAfterAttach = any_to_bool(value);
+			cb(kWPANTUNDStatus_Ok);
 
 		} else {
 			NCPInstanceBase::property_set_value(key, value, cb);
@@ -2395,6 +2404,16 @@ SpinelNCPInstance::handle_ncp_spinel_value_inserted(spinel_prop_key_t key, const
 }
 
 void
+SpinelNCPInstance::check_router_role_change_status(int status)
+{
+	if (status != kWPANTUNDStatus_Ok)
+	{
+		syslog(LOG_ERR, "Failed to set router role to disabled, resetting NCP");
+		ncp_is_misbehaving();
+	}
+}
+
+void
 SpinelNCPInstance::handle_ncp_state_change(NCPState new_ncp_state, NCPState old_ncp_state)
 {
 	NCPInstanceBase::handle_ncp_state_change(new_ncp_state, old_ncp_state);
@@ -2414,6 +2433,21 @@ SpinelNCPInstance::handle_ncp_state_change(NCPState new_ncp_state, NCPState old_
 	 && !ncp_state_is_associated(old_ncp_state)
 	) {
 		mIsCommissioned = true;
+
+		if (mDisableRouterRoleAfterAttach) {
+			CallbackWithStatus cb = boost::bind(&SpinelNCPInstance::check_router_role_change_status, this, _1);
+
+			syslog(LOG_NOTICE, "DisableRouterRoleAfterAttach is enabled, disabling router role on NCP");
+
+			start_new_task(SpinelNCPTaskSendCommand::Factory(this)
+				.set_callback(cb)
+				.add_command(
+					SpinelPackData(SPINEL_FRAME_PACK_CMD_PROP_VALUE_SET(SPINEL_DATATYPE_BOOL_S), SPINEL_PROP_THREAD_ROUTER_ROLE_ENABLED, false)
+				)
+				.finish()
+			);
+		}
+
 		start_new_task(SpinelNCPTaskSendCommand::Factory(this)
 			.add_command(SpinelPackData(SPINEL_FRAME_PACK_CMD_PROP_VALUE_GET, SPINEL_PROP_MAC_15_4_LADDR))
 			.add_command(SpinelPackData(SPINEL_FRAME_PACK_CMD_PROP_VALUE_GET, SPINEL_PROP_IPV6_ML_ADDR))
