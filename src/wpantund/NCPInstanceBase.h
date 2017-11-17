@@ -276,6 +276,70 @@ public:
 	wpantund_status_t set_ncp_version_string(const std::string& version_string);
 
 protected:
+	typedef boost::function<void(CallbackWithStatusArg1)> PropGetHandler;
+	typedef boost::function<void(const boost::any&,	CallbackWithStatus)> PropSetHandler;
+
+	void register_prop_get_handler(const char *key, PropGetHandler handler);
+	void register_prop_set_handler(const char *key, PropSetHandler handler);
+
+	static std::string to_upper(const std::string &str);
+
+private:
+	void register_all_get_set_handlers(void);
+
+	void get_handler_ConfigTUNInterfaceName(CallbackWithStatusArg1 cb);
+	void get_handler_DaemonEnabled(CallbackWithStatusArg1 cb);
+	void get_handler_InterfaceUp(CallbackWithStatusArg1 cb);
+	void get_handler_DaemonReadyForHostSleep(CallbackWithStatusArg1 cb);
+	void get_handler_NCPVersion(CallbackWithStatusArg1 cb);
+	void get_handler_NetworkName(CallbackWithStatusArg1 cb);
+	void get_handler_NetworkIsCommissioned(CallbackWithStatusArg1 cb);
+	void get_handler_NestLabs_LegacyEnabled(CallbackWithStatusArg1 cb);
+	void get_handler_NestLabs_NetworkAllowingJoin(CallbackWithStatusArg1 cb);
+	void get_handler_NetworkPANID(CallbackWithStatusArg1 cb);
+	void get_handler_NetworkXPANID(CallbackWithStatusArg1 cb);
+	void get_handler_NCPChannel(CallbackWithStatusArg1 cb);
+	void get_handler_DaemonVersion(CallbackWithStatusArg1 cb);
+	void get_handler_DaemonAutoAssociateAfterReset(CallbackWithStatusArg1 cb);
+	void get_handler_DaemonAutoDeepSleep(CallbackWithStatusArg1 cb);
+	void get_handler_DaemonAutoFirmwareUpdate(CallbackWithStatusArg1 cb);
+	void get_handler_DaemonTerminateOnFault(CallbackWithStatusArg1 cb);
+	void get_handler_DaemonSetDefRouteForAutoAddedPrefix(CallbackWithStatusArg1 cb);
+	void get_handler_NestLabs_NetworkPassthruPort(CallbackWithStatusArg1 cb);
+	void get_handler_NCPMACAddress(CallbackWithStatusArg1 cb);
+	void get_handler_NCPHardwareAddress(CallbackWithStatusArg1 cb);
+	void get_handler_IPv6SetSLAACForAutoAddedPrefix(CallbackWithStatusArg1 cb);
+	void get_handler_IPv6MeshLocalPrefix(CallbackWithStatusArg1 cb);
+	void get_handler_IPv6MeshLocalAddress(CallbackWithStatusArg1 cb);
+	void get_handler_IPv6LinkLocalAddress(CallbackWithStatusArg1 cb);
+	void get_handler_NestLabs_LegacyMeshLocalPrefix(CallbackWithStatusArg1 cb);
+	void get_handler_NestLabs_LegacyMeshLocalAddress(CallbackWithStatusArg1 cb);
+	void get_handler_NCPState(CallbackWithStatusArg1 cb);
+	void get_handler_NetworkNodeType(CallbackWithStatusArg1 cb);
+	void get_handler_ThreadOnMeshPrefixes(CallbackWithStatusArg1 cb);
+	void get_handler_ThreadOffMeshRoutes(CallbackWithStatusArg1 cb);
+	void get_handler_IPv6AllAddresses(CallbackWithStatusArg1 cb);
+	void get_handler_IPv6MulticastAddresses(CallbackWithStatusArg1 cb);
+	void get_handler_IPv6InterfaceRoutes(CallbackWithStatusArg1 cb);
+	void get_handler_DaemonSyslogMask(CallbackWithStatusArg1 cb);
+
+	void set_handler_DaemonEnabled(const boost::any& value, CallbackWithStatus cb);
+	void set_handler_InterfaceUp(const boost::any& value, CallbackWithStatus cb);
+	void set_handler_DaemonAutoAssociateAfterReset(const boost::any& value, CallbackWithStatus cb);
+	void set_handler_NestLabs_NetworkPassthruPort(const boost::any& value, CallbackWithStatus cb);
+	void set_handler_DaemonAutoFirmwareUpdate(const boost::any& value, CallbackWithStatus cb);
+	void set_handler_DaemonTerminateOnFault(const boost::any& value, CallbackWithStatus cb);
+	void set_handler_DaemonSetDefRouteForAutoAddedPrefix(const boost::any& value, CallbackWithStatus cb);
+	void set_handler_IPv6SetSLAACForAutoAddedPrefix(const boost::any& value, CallbackWithStatus cb);
+	void set_handler_IPv6MeshLocalPrefix(const boost::any& value, CallbackWithStatus cb);
+	void set_handler_DaemonAutoDeepSleep(const boost::any& value, CallbackWithStatus cb);
+	void set_handler_DaemonSyslogMask(const boost::any& value, CallbackWithStatus cb);
+
+private:
+	std::map<std::string, PropGetHandler> mPropertyGetHandlers;
+	std::map<std::string, PropSetHandler> mPropertySetHandlers;
+
+protected:
 	// ========================================================================
 	// MARK: Protected Data
 

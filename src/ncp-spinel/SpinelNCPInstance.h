@@ -23,6 +23,7 @@
 #include "NCPInstanceBase.h"
 #include "SpinelNCPControlInterface.h"
 #include "SpinelNCPThreadDataset.h"
+#include "SpinelNCPTaskSendCommand.h"
 #include "nlpt.h"
 #include "SocketWrapper.h"
 #include "SocketAsyncOp.h"
@@ -202,6 +203,28 @@ public:
 	uint8_t get_thread_mode(void);
 
 	virtual void process(void);
+
+private:
+	typedef SpinelNCPTaskSendCommand::ReplyUnpacker ReplyUnpacker;
+
+	void spinel_get_with_reply_format(spinel_prop_key_t prop_key, const char *replay_format, CallbackWithStatusArg1 cb);
+	void spinel_get_with_reply_unpacker(spinel_prop_key_t prop_key, ReplyUnpacker reply_unpacker, CallbackWithStatusArg1 cb);
+	void spinel_get_check_capability(unsigned int capability, std::string error_msg, CallbackWithStatusArg1 cb,	PropGetHandler handler);
+
+	PropGetHandler create_get_handler_reply_format(spinel_prop_key_t spinel_prop_key, const char *replay_format);
+	PropGetHandler create_get_handler_unpacker(spinel_prop_key_t spinel_prop_key, ReplyUnpacker reply_unpacker);
+	PropGetHandler create_get_handler_capability(unsigned int capability, std::string error_msg, PropGetHandler handler);
+
+
+	void register_prop_get_handler(const char *prop_name, PropGetHandler handler);
+
+	void register_prop_get_handler(const char *prop_name, spinel_prop_key_t spinel_prop_key, const char *reply_format,
+			unsigned int capability = 0, const char *error_msg = NULL);
+
+	void register_prop_get_handler(const char *prop_name, spinel_prop_key_t spinel_prop_key,
+			ReplyUnpacker reply_unpacker, unsigned int capability = 0, const char *error_msg = NULL);
+
+	void register_all_spinel_get_handlers(void);
 
 private:
 	struct SettingsEntry

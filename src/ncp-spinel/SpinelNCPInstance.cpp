@@ -196,6 +196,8 @@ SpinelNCPInstance::SpinelNCPInstance(const Settings& settings) :
 
 	memset(mSteeringDataAddress, 0xff, sizeof(mSteeringDataAddress));
 
+	register_all_spinel_get_handlers();
+
 	if (!settings.empty()) {
 		int status;
 		Settings::const_iterator iter;
@@ -923,6 +925,147 @@ SpinelNCPInstance::update_mesh_local_prefix(struct in6_addr *addr)
 	}
 }
 
+//----------------------------------------------------------------------------------
+// get hanlder helper method
+
+void
+SpinelNCPInstance::spinel_get_with_reply_format(spinel_prop_key_t prop_key, const char *replay_format,
+	CallbackWithStatusArg1 cb)
+{
+	start_new_task(SpinelNCPTaskSendCommand::Factory(this)
+		.set_callback(cb)
+		.add_command(
+			SpinelPackData(SPINEL_FRAME_PACK_CMD_PROP_VALUE_GET, prop_key)
+		)
+		.set_reply_format(replay_format)
+		.finish()
+	);
+}
+
+void
+SpinelNCPInstance::spinel_get_with_reply_unpacker(spinel_prop_key_t prop_key, ReplyUnpacker reply_unpacker,
+	CallbackWithStatusArg1 cb)
+{
+	start_new_task(SpinelNCPTaskSendCommand::Factory(this)
+		.set_callback(cb)
+		.add_command(
+			SpinelPackData(SPINEL_FRAME_PACK_CMD_PROP_VALUE_GET, prop_key)
+		)
+		.set_reply_unpacker(reply_unpacker)
+		.finish()
+	);
+}
+
+
+void
+SpinelNCPInstance::spinel_get_check_capability(unsigned int capability, std::string error_msg,CallbackWithStatusArg1 cb,
+	PropGetHandler get_handler)
+{
+	if (!mCapabilities.count(capability)) {
+		cb(kWPANTUNDStatus_FeatureNotSupported, error_msg);
+	} else {
+		get_handler(cb);
+	}
+}
+
+//--------------------------------------------------------------------------
+// Register get handler method
+
+void
+SpinelNCPInstance::register_prop_get_handler(const char *prop_name, PropGetHandler handler)
+{
+	NCPInstanceBase::register_prop_get_handler(prop_name, handler);
+}
+
+void
+SpinelNCPInstance::register_prop_get_handler(const char *prop_name, spinel_prop_key_t spinel_key,
+	const char *reply_format, unsigned int capability, const char *error_msg)
+{
+	PropGetHandler handler;
+
+	handler = boost::bind(&SpinelNCPInstance::spinel_get_with_reply_format, this, spinel_key, reply_format, _1);
+
+	if (capability != 0) {
+
+		// Non-zero `capability` means that this property requires a check
+		// in `mCapabilities` list. The handler is therefore embedded into
+		// `spinel_get_check_capability()` to perform the capability check
+
+		handler = boost::bind(&SpinelNCPInstance::spinel_get_check_capability, this, capability,
+						std::string(error_msg), _1, handler);
+	}
+
+	register_prop_get_handler(prop_name, handler);
+}
+
+void
+SpinelNCPInstance::register_prop_get_handler(const char *prop_name, spinel_prop_key_t spinel_key,
+	ReplyUnpacker reply_unpacker, unsigned int capability, const char *error_msg)
+{
+	PropGetHandler handler;
+
+	handler = boost::bind(&SpinelNCPInstance::spinel_get_with_reply_unpacker, this, spinel_key, reply_unpacker, _1);
+
+	if (capability != 0) {
+		handler = boost::bind(&SpinelNCPInstance::spinel_get_check_capability, this, capability,
+						std::string(error_msg), _1, handler);
+	}
+
+	register_prop_get_handler(prop_name, handler);
+}
+
+void
+SpinelNCPInstance::register_all_spinel_get_handlers(void)
+{
+	// Properties mapping to spienl property with simple/primitive type
+
+	register_prop_get_handler(kWPANTUNDProperty_NetworkKey, SPINEL_PROP_NET_MASTER_KEY, SPINEL_DATATYPE_DATA_S);
+	register_prop_get_handler(kWPANTUNDProperty_NetworkPSKc, SPINEL_PROP_NET_PSKC, SPINEL_DATATYPE_DATA_S);
+	register_prop_get_handler(kWPANTUNDProperty_NCPExtendedAddress, SPINEL_PROP_MAC_EXTENDED_ADDR, SPINEL_DATATYPE_EUI64_S);
+	register_prop_get_handler(kWPANTUNDProperty_NetworkKeyIndex, SPINEL_PROP_NET_KEY_SEQUENCE_COUNTER, SPINEL_DATATYPE_UINT32_S);
+	register_prop_get_handler(kWPANTUNDProperty_NetworkRole, SPINEL_PROP_NET_ROLE, SPINEL_DATATYPE_UINT8_S);
+	register_prop_get_handler(kWPANTUNDProperty_NetworkPartitionId, SPINEL_PROP_NET_PARTITION_ID, SPINEL_DATATYPE_UINT32_S);
+	register_prop_get_handler(kWPANTUNDProperty_NCPRSSI, SPINEL_PROP_PHY_RSSI, SPINEL_DATATYPE_INT8_S);
+	register_prop_get_handler(kWPANTUNDProperty_ThreadRLOC16, SPINEL_PROP_THREAD_RLOC16, SPINEL_DATATYPE_UINT16_S);
+	register_prop_get_handler(kWPANTUNDProperty_ThreadLeaderAddress, SPINEL_PROP_THREAD_LEADER_ADDR, SPINEL_DATATYPE_IPv6ADDR_S);
+	register_prop_get_handler(kWPANTUNDProperty_ThreadLeaderRouterID, SPINEL_PROP_THREAD_LEADER_RID, SPINEL_DATATYPE_UINT8_S);
+	register_prop_get_handler(kWPANTUNDProperty_ThreadLeaderWeight, SPINEL_PROP_THREAD_LEADER_WEIGHT, SPINEL_DATATYPE_UINT8_S);
+	register_prop_get_handler(kWPANTUNDProperty_ThreadLeaderLocalWeight, SPINEL_PROP_THREAD_LOCAL_LEADER_WEIGHT, SPINEL_DATATYPE_UINT8_S);
+	register_prop_get_handler(kWPANTUNDProperty_ThreadNetworkData, SPINEL_PROP_THREAD_NETWORK_DATA, SPINEL_DATATYPE_DATA_S);
+	register_prop_get_handler(kWPANTUNDProperty_ThreadNetworkDataVersion, SPINEL_PROP_THREAD_NETWORK_DATA_VERSION, SPINEL_DATATYPE_UINT8_S);
+	register_prop_get_handler(kWPANTUNDProperty_ThreadStableNetworkData, SPINEL_PROP_THREAD_STABLE_NETWORK_DATA, SPINEL_DATATYPE_DATA_S);
+	register_prop_get_handler(kWPANTUNDProperty_ThreadLeaderNetworkData, SPINEL_PROP_THREAD_LEADER_NETWORK_DATA, SPINEL_DATATYPE_DATA_S);
+	register_prop_get_handler(kWPANTUNDProperty_ThreadStableLeaderNetworkData, SPINEL_PROP_THREAD_STABLE_LEADER_NETWORK_DATA, SPINEL_DATATYPE_DATA_S);
+	register_prop_get_handler(kWPANTUNDProperty_ThreadStableNetworkDataVersion, SPINEL_PROP_THREAD_STABLE_NETWORK_DATA_VERSION, SPINEL_DATATYPE_UINT8_S);
+	register_prop_get_handler(kWPANTUNDProperty_ThreadCommissionerEnabled, SPINEL_PROP_THREAD_COMMISSIONER_ENABLED, SPINEL_DATATYPE_BOOL_S);
+	register_prop_get_handler(kWPANTUNDProperty_ThreadRouterRoleEnabled, SPINEL_PROP_THREAD_ROUTER_ROLE_ENABLED, SPINEL_DATATYPE_BOOL_S);
+	register_prop_get_handler(kWPANTUNDProperty_ThreadDeviceMode, SPINEL_PROP_THREAD_MODE, SPINEL_DATATYPE_UINT8_S);
+
+	// Properties mapping to a spinel property requiring an unpacker.
+
+	register_prop_get_handler(kWPANTUNDProperty_ThreadActiveDataset, SPINEL_PROP_THREAD_ACTIVE_DATASET,
+		boost::bind(unpack_dataset, _1, _2, _3, false));
+
+	register_prop_get_handler(kWPANTUNDProperty_ThreadActiveDatasetAsValMap, SPINEL_PROP_THREAD_ACTIVE_DATASET,
+		boost::bind(unpack_dataset, _1, _2, _3, true));
+
+	register_prop_get_handler(kWPANTUNDProperty_ThreadPendingDataset, SPINEL_PROP_THREAD_PENDING_DATASET,
+		boost::bind(unpack_dataset, _1, _2, _3, false));
+
+	register_prop_get_handler(kWPANTUNDProperty_ThreadPendingDatasetAsValMap, SPINEL_PROP_THREAD_PENDING_DATASET,
+		boost::bind(unpack_dataset, _1, _2, _3, true));
+
+	// Properties that require presence of a capability, mapping to a spienl type
+
+	register_prop_get_handler(
+		kWPANTUNDProperty_NCPSleepyPollInterval,
+		SPINEL_PROP_MAC_DATA_POLL_PERIOD, SPINEL_DATATYPE_UINT32_S,
+		SPINEL_CAP_ROLE_SLEEPY, "Sleepy role is not supported by NCP"
+	);
+
+	// Properties with a specific callback.
+}
+
 void
 SpinelNCPInstance::property_get_value(
 	const std::string& key,
@@ -948,15 +1091,8 @@ SpinelNCPInstance::property_get_value(
 	} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_NCPChannelMask)) {
 		cb(0, boost::any(get_default_channel_mask()));
 
-	} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_NCPCCAThreshold)) {
-		SIMPLE_SPINEL_GET(SPINEL_PROP_PHY_CCA_THRESHOLD, SPINEL_DATATYPE_INT8_S);
 
-	} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_NCPTXPower)) {
-		SIMPLE_SPINEL_GET(SPINEL_PROP_PHY_TX_POWER, SPINEL_DATATYPE_INT8_S);
-
-	} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_NCPFrequency)) {
-		SIMPLE_SPINEL_GET(SPINEL_PROP_PHY_FREQ, SPINEL_DATATYPE_INT32_S);
-
+/*
 	} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_NetworkKey)) {
 		SIMPLE_SPINEL_GET(SPINEL_PROP_NET_MASTER_KEY, SPINEL_DATATYPE_DATA_S);
 
@@ -966,19 +1102,14 @@ SpinelNCPInstance::property_get_value(
 	} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_NCPExtendedAddress)) {
 		SIMPLE_SPINEL_GET(SPINEL_PROP_MAC_EXTENDED_ADDR, SPINEL_DATATYPE_EUI64_S);
 
-	} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_NCPSleepyPollInterval)) {
-		if (!mCapabilities.count(SPINEL_CAP_ROLE_SLEEPY)) {
-			cb(kWPANTUNDStatus_FeatureNotSupported, boost::any(std::string("Sleepy role is not supported by NCP")));
-		} else {
-			SIMPLE_SPINEL_GET(SPINEL_PROP_MAC_DATA_POLL_PERIOD, SPINEL_DATATYPE_UINT32_S);
-		}
-
 	} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_NetworkKeyIndex)) {
 		SIMPLE_SPINEL_GET(SPINEL_PROP_NET_KEY_SEQUENCE_COUNTER, SPINEL_DATATYPE_UINT32_S);
+*/
 
 	} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_NetworkIsCommissioned)) {
 		cb(kWPANTUNDStatus_Ok, boost::any(mIsCommissioned));
 
+/*
 	} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_NetworkRole)) {
 		SIMPLE_SPINEL_GET(SPINEL_PROP_NET_ROLE, SPINEL_DATATYPE_UINT8_S);
 
@@ -990,11 +1121,13 @@ SpinelNCPInstance::property_get_value(
 
 	} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_ThreadRLOC16)) {
 		SIMPLE_SPINEL_GET(SPINEL_PROP_THREAD_RLOC16, SPINEL_DATATYPE_UINT16_S);
+*/
 
 	} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_ThreadRouterID)) {
 		cb = boost::bind(convert_rloc16_to_router_id, cb, _1, _2);
 		SIMPLE_SPINEL_GET(SPINEL_PROP_THREAD_RLOC16, SPINEL_DATATYPE_UINT16_S);
 
+/*
 	} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_ThreadLeaderAddress)) {
 		SIMPLE_SPINEL_GET(SPINEL_PROP_THREAD_LEADER_ADDR, SPINEL_DATATYPE_IPv6ADDR_S);
 
@@ -1033,10 +1166,12 @@ SpinelNCPInstance::property_get_value(
 
 	} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_ThreadDeviceMode)) {
 		SIMPLE_SPINEL_GET(SPINEL_PROP_THREAD_MODE, SPINEL_DATATYPE_UINT8_S);
+*/
 
 	} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_ThreadConfigFilterRLOCAddresses)) {
 		cb(kWPANTUNDStatus_Ok, boost::any(mFilterRLOCAddresses));
 
+/*
 	} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_ThreadActiveDataset)) {
 		start_new_task(SpinelNCPTaskSendCommand::Factory(this)
 			.set_callback(cb)
@@ -1076,6 +1211,7 @@ SpinelNCPInstance::property_get_value(
 			.set_reply_unpacker(boost::bind(unpack_dataset, _1, _2, _3, true))
 			.finish()
 		);
+*/
 
 	} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_IPv6MeshLocalPrefix) && !buffer_is_nonzero(mNCPV6Prefix, sizeof(mNCPV6Prefix))) {
 		SIMPLE_SPINEL_GET(SPINEL_PROP_IPV6_ML_PREFIX, SPINEL_DATATYPE_IPv6ADDR_S);
