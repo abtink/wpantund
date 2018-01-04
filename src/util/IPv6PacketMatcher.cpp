@@ -22,7 +22,7 @@
 #endif
 
 #include "IPv6PacketMatcher.h"
-#include <syslog.h>
+#include "Log.h"
 #include <stdio.h>
 
 #ifndef IPV6_PACKET_MATCHER_DEBUG

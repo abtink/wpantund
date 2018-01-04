@@ -55,7 +55,7 @@ in that direction.
 #include "FirmwareUpgrade.h"
 #include "socket-utils.h"
 #include <errno.h>
-#include <syslog.h>
+#include "Log.h"
 #include "fgetln.h"
 #include <unistd.h>
 #include <string.h>

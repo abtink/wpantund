@@ -53,7 +53,7 @@
 #endif
 
 #if ASSERT_MACROS_USE_SYSLOG
-#include <syslog.h>
+#include "Log.h"
 #endif
 
 #ifndef ASSERT_MACROS_SQUELCH

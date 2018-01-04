@@ -34,7 +34,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "netif-mgmt.h"
-#include <syslog.h>
+#include "Log.h"
 #include <fcntl.h>
 #include <errno.h>
 #include <string.h>

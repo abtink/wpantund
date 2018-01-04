@@ -24,7 +24,7 @@
 #include "assert-macros.h"
 #include "NCPInstance.h"
 #include "tunnel.h"
-#include <syslog.h>
+#include "Log.h"
 #include <errno.h>
 
 #ifndef HAVE_DLFCN_H

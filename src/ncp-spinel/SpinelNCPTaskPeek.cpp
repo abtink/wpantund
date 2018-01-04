@@ -22,7 +22,7 @@
 #endif
 
 #include "assert-macros.h"
-#include <syslog.h>
+#include "Log.h"
 #include <errno.h>
 #include "SpinelNCPTaskPeek.h"
 #include "SpinelNCPInstance.h"

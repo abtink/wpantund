@@ -209,7 +209,7 @@ strtomask_uint32(const char* in_string)
 	return mask;
 }
 
-#include <syslog.h>
+#include "Log.h"
 
 int
 strtologmask(const char* value, int prev_mask)

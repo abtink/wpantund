@@ -51,6 +51,7 @@ endif
 SOURCES = \
 	wpantund.h \
 	IPCServer.h \
+	Log.h \
 	NCPConstants.h \
 	NCPControlInterface.cpp \
 	NCPControlInterface.h \

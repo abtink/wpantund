@@ -26,7 +26,7 @@
 #endif
 
 #include "assert-macros.h"
-#include <syslog.h>
+#include "Log.h"
 #include <errno.h>
 #include "SpinelNCPTaskDeepSleep.h"
 #include "SpinelNCPInstance.h"

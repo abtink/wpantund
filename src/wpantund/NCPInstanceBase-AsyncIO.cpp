@@ -24,7 +24,7 @@
 #include "assert-macros.h"
 #include "NCPInstanceBase.h"
 #include "tunnel.h"
-#include <syslog.h>
+#include "Log.h"
 #include <errno.h>
 #include "nlpt.h"
 #include <algorithm>

@@ -29,7 +29,7 @@
 #include "NetworkRetain.h"
 #include "socket-utils.h"
 
-#include <syslog.h>
+#include "Log.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>

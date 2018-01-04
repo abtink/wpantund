@@ -24,7 +24,7 @@
 #include "RunawayResetBackoffManager.h"
 
 #include <cstring>
-#include <syslog.h>
+#include "Log.h"
 #include <sys/time.h>
 
 using namespace nl;

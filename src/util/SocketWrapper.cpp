@@ -34,7 +34,7 @@
 #include <termios.h>
 #include <poll.h>
 #include <errno.h>
-#include <syslog.h>
+#include "Log.h"
 #include <sys/file.h>
 
 using namespace nl;

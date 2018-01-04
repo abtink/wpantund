@@ -29,7 +29,7 @@
 #include "socket-utils.h"
 #include "string-utils.h"
 #include <ctype.h>
-#include <syslog.h>
+#include "Log.h"
 #include <errno.h>
 #include <string.h>
 #include <stdlib.h>

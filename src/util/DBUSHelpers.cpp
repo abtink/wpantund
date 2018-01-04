@@ -27,7 +27,7 @@
 
 #include "DBUSHelpers.h"
 #include "Data.h"
-#include <syslog.h>
+#include "Log.h"
 #include <string>
 #include <list>
 #include <map>

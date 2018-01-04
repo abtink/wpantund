@@ -24,7 +24,7 @@
 #include "DummyNCPInstance.h"
 #include "time-utils.h"
 #include "assert-macros.h"
-#include <syslog.h>
+#include "Log.h"
 #include <errno.h>
 #include "socket-utils.h"
 #include <stdexcept>

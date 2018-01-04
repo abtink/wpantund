@@ -31,7 +31,7 @@
 #include "SuperSocket.h"
 #include "socket-utils.h"
 #include "time-utils.h"
-#include <syslog.h>
+#include "Log.h"
 #include <errno.h>
 #include <unistd.h>
 #include <termios.h>

@@ -38,7 +38,7 @@
 #include <algorithm>
 #include <errno.h>
 #include <arpa/inet.h>
-#include <syslog.h>
+#include "Log.h"
 #include <sys/time.h>
 
 #include <boost/bind.hpp>

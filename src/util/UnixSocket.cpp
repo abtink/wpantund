@@ -26,7 +26,7 @@
 #include "socket-utils.h"
 #include <termios.h>
 #include <sys/file.h>
-#include <syslog.h>
+#include "Log.h"
 #include <poll.h>
 
 using namespace nl;

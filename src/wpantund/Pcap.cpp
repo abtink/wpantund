@@ -24,7 +24,7 @@
 #include "assert-macros.h"
 
 #include <string.h>
-#include <syslog.h>
+#include "Log.h"
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <errno.h>

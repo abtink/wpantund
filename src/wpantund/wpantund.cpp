@@ -72,7 +72,7 @@
 #include <poll.h>
 #include <sys/select.h>
 
-#include <syslog.h>
+#include "Log.h"
 #include <errno.h>
 #include <libgen.h>
 

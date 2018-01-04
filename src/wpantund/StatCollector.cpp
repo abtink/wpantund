@@ -25,7 +25,7 @@
 #endif
 
 #include <stdio.h>
-#include <syslog.h>
+#include "Log.h"
 #include <arpa/inet.h>
 #include <iterator>
 #include "StatCollector.h"

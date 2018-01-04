@@ -27,7 +27,7 @@
 
 #include "assert-macros.h"
 #include "TunnelIPv6Interface.h"
-#include <syslog.h>
+#include "Log.h"
 #include "IPv6Helpers.h"
 
 #if __linux__

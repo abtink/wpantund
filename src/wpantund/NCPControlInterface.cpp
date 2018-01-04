@@ -28,7 +28,7 @@
 #include "NCPControlInterface.h"
 #include "NCPInstance.h"
 #include "tunnel.h"
-#include <syslog.h>
+#include "Log.h"
 #include <arpa/inet.h>
 #include <errno.h>
 #include <boost/bind.hpp>

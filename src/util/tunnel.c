@@ -35,7 +35,7 @@
 #include <stdlib.h>
 #include "tunnel.h"
 #include "string-utils.h"
-#include <syslog.h>
+#include "Log.h"
 #include <fcntl.h>
 #include <errno.h>
 #include <string.h>

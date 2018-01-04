@@ -39,7 +39,7 @@
 #include <poll.h>
 #include <sys/select.h>
 #include <libgen.h>
-#include <syslog.h>
+#include "Log.h"
 
 #include "fgetln.h"
 #include "string-utils.h"
