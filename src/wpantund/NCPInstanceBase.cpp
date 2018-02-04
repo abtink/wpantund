@@ -895,7 +895,9 @@ NCPInstanceBase::set_handler_DaemonAutoDeepSleep(const boost::any& value, Callba
 void
 NCPInstanceBase::set_handler_DaemonSyslogMask(const boost::any& value, CallbackWithStatus cb)
 {
+#if !FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
 	setlogmask(strtologmask(any_to_string(value).c_str(), setlogmask(0)));
+#endif
 	cb(0);
 }
 
@@ -919,124 +921,6 @@ NCPInstanceBase::property_set_value(
 
 		if (iter != mPropertySetHandlers.end()) {
 			iter->second(value, cb);
-
-		// HERE THE DEFAULT STUFF
-
-/*
-		if (strcaseequal(key.c_str(), kWPANTUNDProperty_DaemonEnabled)) {
-			mEnabled = any_to_bool(value);
-			cb(0);
-
-		} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_InterfaceUp)) {
-			bool isup = any_to_bool(value);
-			if (isup != mPrimaryInterface->is_online()) {
-				if (isup) {
-					get_control_interface().attach(cb);
-				} else {
-					if (ncp_state_is_joining_or_joined(get_ncp_state())) {
-						// This isn't quite what we want, but the subclass
-						// should be overriding this anyway.
-						get_control_interface().reset();
-					}
-				}
-			} else {
-				cb(0);
-			}
-
-		} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_DaemonAutoAssociateAfterReset)) {
-			mAutoResume = any_to_bool(value);
-			cb(0);
-
-		} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_NestLabs_NetworkPassthruPort)) {
-			mCommissionerPort = static_cast<uint16_t>(any_to_int(value));
-			cb(0);
-
-		} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_DaemonAutoFirmwareUpdate)) {
-			bool value_bool = any_to_bool(value);
-
-			if (value_bool && !mAutoUpdateFirmware) {
-				if (get_ncp_state() == FAULT) {
-					syslog(LOG_ALERT, "The NCP is misbehaving: Attempting a firmware update");
-					upgrade_firmware();
-				} else if (get_ncp_state() != UNINITIALIZED) {
-					if (is_firmware_upgrade_required(mNCPVersionString)) {
-						syslog(LOG_NOTICE, "NCP FIRMWARE UPGRADE IS REQUIRED");
-						upgrade_firmware();
-					}
-				}
-			}
-
-			mAutoUpdateFirmware = value_bool;
-
-			cb(0);
-
-		} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_DaemonTerminateOnFault)) {
-			mTerminateOnFault = any_to_bool(value);
-			cb(0);
-			if (mTerminateOnFault && (get_ncp_state() == FAULT)) {
-				reinitialize_ncp();
-			}
-
-		} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_DaemonSetDefRouteForAutoAddedPrefix)) {
-			mSetDefaultRouteForAutoAddedPrefix = any_to_bool(value);
-			cb(0);
-
-		} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_IPv6SetSLAACForAutoAddedPrefix)) {
-			mSetSLAACForAutoAddedPrefix = any_to_bool(value);
-			cb(0);
-************************************************************************
-		} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_IPv6MeshLocalPrefix)
-			|| strcaseequal(key.c_str(), kWPANTUNDProperty_IPv6MeshLocalAddress)
-		) {
-			if (get_ncp_state() <= OFFLINE) {
-				nl::Data prefix;
-
-				if (value.type() == typeid(std::string)) {
-					uint8_t ula_bytes[16] = {};
-					const std::string ip_string(any_to_string(value));
-
-					// Address-style
-					int bits = inet_pton(AF_INET6,ip_string.c_str(),ula_bytes);
-					if (bits <= 0) {
-						// Prefix is the wrong length.
-						cb(kWPANTUNDStatus_InvalidArgument);
-						return;
-					}
-
-					prefix = nl::Data(ula_bytes, 8);
-				} else {
-					prefix = any_to_data(value);
-				}
-
-				if (prefix.size() < sizeof(mNCPV6Prefix)) {
-					// Prefix is the wrong length.
-					cb(kWPANTUNDStatus_InvalidArgument);
-				}
-				memcpy(mNCPV6Prefix, prefix.data(), sizeof(mNCPV6Prefix));
-				cb(0);
-			} else {
-				cb(kWPANTUNDStatus_InvalidForCurrentState);
-			}
-
-		} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_DaemonAutoDeepSleep)) {
-			mAutoDeepSleep = any_to_bool(value);
-
-			if (mAutoDeepSleep == false
-				&& mNCPState == DEEP_SLEEP
-				&& mEnabled
-			) {
-				// Wake us up if we are asleep and deep sleep was turned off.
-				get_control_interface().refresh_state(boost::bind(cb,0));
-			} else {
-				cb(0);
-			}
-
-		} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_DaemonSyslogMask)) {
-#if !FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
-			setlogmask(strtologmask(any_to_string(value).c_str(), setlogmask(0)));
-#endif
-			cb(0);
-*/
 
 		} else if (StatCollector::is_a_stat_property(key)) {
 			get_stat_collector().property_set_value(key, value, cb);
