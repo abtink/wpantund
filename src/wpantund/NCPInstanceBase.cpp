@@ -389,12 +389,24 @@ NCPInstanceBase::register_all_get_set_handlers(void)
 #define REGISTER_PROP_SET_HANDLER(name)     \
 	register_prop_set_handler(kWPANTUNDProperty_##name, boost::bind(&NCPInstanceBase::set_handler_##name, this, _1, _2))
 
-	//REGISTER_PROP_SET_HANDLER()
+	REGISTER_PROP_SET_HANDLER(DaemonEnabled);
+	REGISTER_PROP_SET_HANDLER(InterfaceUp);
+	REGISTER_PROP_SET_HANDLER(DaemonAutoAssociateAfterReset);
+	REGISTER_PROP_SET_HANDLER(NestLabs_NetworkPassthruPort);
+	REGISTER_PROP_SET_HANDLER(DaemonAutoFirmwareUpdate);
+	REGISTER_PROP_SET_HANDLER(DaemonTerminateOnFault);
+	REGISTER_PROP_SET_HANDLER(DaemonSetDefRouteForAutoAddedPrefix);
+	REGISTER_PROP_SET_HANDLER(IPv6SetSLAACForAutoAddedPrefix);
+	REGISTER_PROP_SET_HANDLER(IPv6MeshLocalPrefix);
+	REGISTER_PROP_SET_HANDLER(DaemonAutoDeepSleep);
+	REGISTER_PROP_SET_HANDLER(DaemonSyslogMask);
 
 #undef REGISTER_PROP_SET_HANDLER
 
-
-
+	register_prop_set_handler(
+		kWPANTUNDProperty_IPv6MeshLocalAddress,
+		boost::bind(&NCPInstanceBase::set_handler_IPv6MeshLocalPrefix, this, _1, _2)
+	);
 }
 
 // ----------------------------------------------------------------------------
