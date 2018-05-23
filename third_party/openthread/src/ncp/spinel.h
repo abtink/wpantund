@@ -42,7 +42,6 @@
 #endif // else SPINEL_PLATFORM_HEADER
 
 // ----------------------------------------------------------------------------
-
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
 
 # if defined(__GNUC__)
