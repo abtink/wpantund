@@ -405,7 +405,7 @@ SpinelNCPInstance::get_ms_to_next_event(void)
 		}
 	}
 
-	if (cms < mVendorCustom.get_ms_to_next_event()) {
+	if (cms > mVendorCustom.get_ms_to_next_event()) {
 		cms = mVendorCustom.get_ms_to_next_event();
 	}
 
