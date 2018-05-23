@@ -4,6 +4,7 @@ addons:
     apt:
         packages:
             - bsdtar
+            - dbus
             - libdbus-1-dev
             - autoconf-archive
             - libglib2.0-dev
