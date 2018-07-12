@@ -3224,6 +3224,11 @@ SpinelNCPInstance::property_insert_value(
 				}
 			}
 
+		} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_IPv6AllAddresses)) {
+			struct in6_addr addr = any_to_ipv6(value);
+			unicast_address_was_added(kOriginUser, addr);
+			cb(kWPANTUNDStatus_Ok);
+
 		} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_MACBlacklistEntries)) {
 			Data ext_address = any_to_data(value);
 			int8_t rssi = kWPANTUND_Whitelist_RssiOverrideDisabled;
