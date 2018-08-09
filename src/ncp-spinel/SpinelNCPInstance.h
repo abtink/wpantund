@@ -23,6 +23,7 @@
 #include "NCPInstanceBase.h"
 #include "SpinelNCPControlInterface.h"
 #include "SpinelNCPThreadDataset.h"
+#include "SpinelNCPTaskSendCommand.h"
 #include "nlpt.h"
 #include "SocketWrapper.h"
 #include "SocketAsyncOp.h"
@@ -188,13 +189,47 @@ private:
 public:
 	static bool setup_property_supported_by_class(const std::string& prop_name);
 
-	virtual std::set<std::string> get_supported_property_keys()const;
+	virtual std::set<std::string> get_supported_property_keys(void) const;
+
+private:
+	typedef SpinelNCPTaskSendCommand::ReplyUnpacker ReplyUnpacker;
+
+	void prop_getter_simple(CallbackWithStatusArg1 cb, spinel_prop_key_t prop_key, const std::string &reply_format);
+	void prop_getter_unpacker(CallbackWithStatusArg1 cb, spinel_prop_key_t prop_key, ReplyUnpacker unpacker);
+
+	void prop_getter_check_capability(CallbackWithStatusArg1 cb, const std::string &prop_name, unsigned int capability,
+			PropGetHandler handler);
+
+	void register_get_handler(const char *prop_name, PropGetHandler handler);
+	void register_get_handler(const char *prop_name, unsigned int capability, PropGetHandler handler);
+
+	void register_get_handler(const char *prop_name, spinel_prop_key_t prop_key, const char *reply_format);
+	void register_get_handler(const char *prop_name, spinel_prop_key_t prop_key, ReplyUnpacker unpacker);
+	void register_get_handler(const char *prop_name, unsigned int capability, spinel_prop_key_t prop_key,
+			const char *reply_format);
+	void register_get_handler(const char *prop_name, unsigned int capability, spinel_prop_key_t prop_key,
+			ReplyUnpacker unpacker);
+
+	void regsiter_all_get_handlers(void);
+
+
+	void get_prop_ConfigNCPDriverName(CallbackWithStatusArg1 cb);
+	void get_prop_NetworkIsCommissioned(CallbackWithStatusArg1 cb);
+	void get_prop_ThreadRouterID(CallbackWithStatusArg1 cb);
+	void get_prop_ThreadConfigFilterRLOCAddresses(CallbackWithStatusArg1 cb);
+
+public:
 
 	virtual void property_get_value(const std::string& key, CallbackWithStatusArg1 cb);
+
 	virtual void property_set_value(const std::string& key, const boost::any& value, CallbackWithStatus cb);
+
 	virtual void property_insert_value(const std::string& key, const boost::any& value, CallbackWithStatus cb);
+
 	virtual void property_remove_value(const std::string& key, const boost::any& value, CallbackWithStatus cb);
 
+
+public:
 	virtual cms_t get_ms_to_next_event(void);
 
 	virtual void reset_tasks(wpantund_status_t status = kWPANTUNDStatus_Canceled);
