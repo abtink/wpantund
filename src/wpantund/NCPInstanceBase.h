@@ -284,7 +284,7 @@ protected:
 	// (the one that is given in `register_prop_<action>_handler`) is passed as
 	// the last argument to the handler function (as a `const std::string&`).
 	// NOTE: Some handlers may have no need for the property name argument. The
-	// extra argument can be ignored when registering a handler created by using
+	// extra argument can be ignored when registering a handler created by
 	// `boost:bind`.
 
 	typedef boost::function<void(CallbackWithStatusArg1, const std::string&)> PropGetHandler;
