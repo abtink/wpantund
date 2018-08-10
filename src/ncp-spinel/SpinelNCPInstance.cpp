@@ -1006,31 +1006,6 @@ bail:
 }
 
 static int
-unpack_jam_detect_history_bitmap(const uint8_t *data_in, spinel_size_t data_len, boost::any& value)
-{
-	spinel_ssize_t len;
-	uint32_t lower, higher;
-	uint64_t val;
-	int ret = kWPANTUNDStatus_Failure;
-
-	len = spinel_datatype_unpack(
-		data_in,
-		data_len,
-		SPINEL_DATATYPE_UINT32_S SPINEL_DATATYPE_UINT32_S,
-		&lower,
-		&higher
-	);
-
-	if (len > 0)
-	{
-		ret = kWPANTUNDStatus_Ok;
-		value = (static_cast<uint64_t>(higher) << 32) + static_cast<uint64_t>(lower);
-	}
-
-	return ret;
-}
-
-static int
 unpack_mcu_power_state(const uint8_t *data_in, spinel_size_t data_len, boost::any& value)
 {
 	spinel_ssize_t len;
@@ -1649,14 +1624,36 @@ SpinelNCPInstance::regsiter_all_get_handlers(void)
 	register_get_handler(kWPANTUNDProperty_ThreadStableNetworkDataVersion, SPINEL_PROP_THREAD_STABLE_NETWORK_DATA_VERSION, SPINEL_DATATYPE_UINT8_S);
 	register_get_handler(kWPANTUNDProperty_ThreadRouterRoleEnabled, SPINEL_PROP_THREAD_ROUTER_ROLE_ENABLED, SPINEL_DATATYPE_BOOL_S);
 	register_get_handler(kWPANTUNDProperty_ThreadDeviceMode, SPINEL_PROP_THREAD_MODE, SPINEL_DATATYPE_UINT8_S);
-
-
+	register_get_handler(kWPANTUNDProperty_OpenThreadDebugTestAssert, SPINEL_PROP_DEBUG_TEST_ASSERT, SPINEL_DATATYPE_BOOL_S);
+	register_get_handler(kWPANTUNDProperty_OpenThreadDebugTestWatchdog, SPINEL_PROP_DEBUG_TEST_WATCHDOG, SPINEL_DATATYPE_BOOL_S);
+	register_get_handler(kWPANTUNDProperty_TmfProxyEnabled, SPINEL_PROP_THREAD_TMF_PROXY_ENABLED, SPINEL_DATATYPE_BOOL_S);
+	register_get_handler(kWPANTUNDProperty_NCPCCAFailureRate, SPINEL_PROP_MAC_CCA_FAILURE_RATE, SPINEL_DATATYPE_UINT16_S);
 
 	// Simple properties with capability check
 
 	register_get_handler(kWPANTUNDProperty_NCPSleepyPollInterval, SPINEL_CAP_ROLE_SLEEPY, SPINEL_PROP_MAC_DATA_POLL_PERIOD, SPINEL_DATATYPE_UINT32_S);
 	register_get_handler(kWPANTUNDProperty_ThreadJoinerState, SPINEL_CAP_THREAD_JOINER, SPINEL_PROP_MESHCOP_JOINER_STATE, SPINEL_DATATYPE_UINT8_S);
-
+	register_get_handler(kWPANTUNDProperty_CommissionerProvisioningUrl, SPINEL_CAP_THREAD_COMMISSIONER, SPINEL_PROP_MESHCOP_COMMISSIONER_PROVISIONING_URL, SPINEL_DATATYPE_UTF8_S);
+	register_get_handler(kWPANTUNDProperty_CommissionerSessionId, SPINEL_CAP_THREAD_COMMISSIONER, SPINEL_PROP_MESHCOP_COMMISSIONER_SESSION_ID, SPINEL_DATATYPE_UINT16_S);
+	register_get_handler(kWPANTUNDProperty_MACWhitelistEnabled, SPINEL_CAP_MAC_WHITELIST, SPINEL_PROP_MAC_WHITELIST_ENABLED, SPINEL_DATATYPE_BOOL_S);
+	register_get_handler(kWPANTUNDProperty_MACBlacklistEnabled, SPINEL_CAP_MAC_WHITELIST, SPINEL_PROP_MAC_BLACKLIST_ENABLED, SPINEL_DATATYPE_BOOL_S);
+	register_get_handler(kWPANTUNDProperty_JamDetectionStatus, SPINEL_CAP_JAM_DETECT, SPINEL_PROP_JAM_DETECTED, SPINEL_DATATYPE_BOOL_S);
+	register_get_handler(kWPANTUNDProperty_JamDetectionEnable, SPINEL_CAP_JAM_DETECT, SPINEL_PROP_JAM_DETECT_ENABLE, SPINEL_DATATYPE_BOOL_S);
+	register_get_handler(kWPANTUNDProperty_JamDetectionRssiThreshold, SPINEL_CAP_JAM_DETECT, SPINEL_PROP_JAM_DETECT_RSSI_THRESHOLD, SPINEL_DATATYPE_INT8_S);
+	register_get_handler(kWPANTUNDProperty_JamDetectionWindow, SPINEL_CAP_JAM_DETECT, SPINEL_PROP_JAM_DETECT_WINDOW, SPINEL_DATATYPE_UINT8_S);
+	register_get_handler(kWPANTUNDProperty_JamDetectionBusyPeriod, SPINEL_CAP_JAM_DETECT, SPINEL_PROP_JAM_DETECT_BUSY, SPINEL_DATATYPE_UINT8_S);
+	register_get_handler(kWPANTUNDProperty_JamDetectionDebugHistoryBitmap, SPINEL_CAP_JAM_DETECT, SPINEL_PROP_JAM_DETECT_HISTORY_BITMAP, SPINEL_DATATYPE_UINT64_S);
+	register_get_handler(kWPANTUNDProperty_ChildSupervisionInterval, SPINEL_CAP_CHILD_SUPERVISION, SPINEL_PROP_CHILD_SUPERVISION_INTERVAL, SPINEL_DATATYPE_UINT16_S);
+	register_get_handler(kWPANTUNDProperty_ChildSupervisionCheckTimeout, SPINEL_CAP_CHILD_SUPERVISION, SPINEL_PROP_CHILD_SUPERVISION_CHECK_TIMEOUT, SPINEL_DATATYPE_UINT16_S);
+	register_get_handler(kWPANTUNDProperty_ChannelMonitorSampleInterval, SPINEL_CAP_CHANNEL_MONITOR, SPINEL_PROP_CHANNEL_MONITOR_SAMPLE_INTERVAL, SPINEL_DATATYPE_UINT32_S);
+	register_get_handler(kWPANTUNDProperty_ChannelMonitorRssiThreshold, SPINEL_CAP_CHANNEL_MONITOR, SPINEL_PROP_CHANNEL_MONITOR_RSSI_THRESHOLD, SPINEL_DATATYPE_INT8_S);
+	register_get_handler(kWPANTUNDProperty_ChannelMonitorSampleWindow, SPINEL_CAP_CHANNEL_MONITOR, SPINEL_PROP_CHANNEL_MONITOR_SAMPLE_WINDOW, SPINEL_DATATYPE_UINT32_S);
+	register_get_handler(kWPANTUNDProperty_ChannelMonitorSampleCount, SPINEL_CAP_CHANNEL_MONITOR, SPINEL_PROP_CHANNEL_MONITOR_SAMPLE_COUNT, SPINEL_DATATYPE_UINT32_S);
+	register_get_handler(kWPANTUNDProperty_ChannelManagerNewChannel, SPINEL_CAP_CHANNEL_MANAGER, SPINEL_PROP_CHANNEL_MANAGER_NEW_CHANNEL, SPINEL_DATATYPE_UINT8_S);
+	register_get_handler(kWPANTUNDProperty_ChannelManagerDelay, SPINEL_CAP_CHANNEL_MANAGER, SPINEL_PROP_CHANNEL_MANAGER_DELAY, SPINEL_DATATYPE_UINT16_S);
+	register_get_handler(kWPANTUNDProperty_ChannelManagerAutoSelectEnabled, SPINEL_CAP_CHANNEL_MANAGER, SPINEL_PROP_CHANNEL_MANAGER_AUTO_SELECT_ENABLED, SPINEL_DATATYPE_BOOL_S);
+	register_get_handler(kWPANTUNDProperty_ChannelManagerAutoSelectInterval, SPINEL_CAP_CHANNEL_MANAGER, SPINEL_PROP_CHANNEL_MANAGER_AUTO_SELECT_INTERVAL, SPINEL_DATATYPE_UINT32_S);
+	register_get_handler(kWPANTUNDProperty_ChannelManagerChannelSelect, SPINEL_CAP_CHANNEL_MANAGER, SPINEL_PROP_CHANNEL_MANAGER_CHANNEL_SELECT, SPINEL_DATATYPE_BOOL_S);
 
 
 	// Properties with unpacker
@@ -1676,6 +1673,24 @@ SpinelNCPInstance::regsiter_all_get_handlers(void)
 
 	register_get_handler(kWPANTUNDProperty_NCPMCUPowerState, SPINEL_CAP_MCU_POWER_STATE, SPINEL_PROP_MCU_POWER_STATE,
 		unpack_mcu_power_state);
+	register_get_handler(kWPANTUNDProperty_CommissionerState, SPINEL_CAP_THREAD_COMMISSIONER,
+		SPINEL_PROP_MESHCOP_COMMISSIONER_STATE, unpack_commissioner_state);
+	register_get_handler(kWPANTUNDProperty_MACWhitelistEntries, SPINEL_CAP_MAC_WHITELIST, SPINEL_PROP_MAC_WHITELIST,
+		boost::bind(unpack_mac_whitelist_entries, _1, _2, _3, false));
+	register_get_handler(kWPANTUNDProperty_MACWhitelistEntriesAsValMap, SPINEL_CAP_MAC_WHITELIST,
+		SPINEL_PROP_MAC_WHITELIST, boost::bind(unpack_mac_whitelist_entries, _1, _2, _3, true));
+	register_get_handler(kWPANTUNDProperty_MACBlacklistEntries, SPINEL_CAP_MAC_WHITELIST, SPINEL_PROP_MAC_BLACKLIST,
+		boost::bind(unpack_mac_blacklist_entries, _1, _2, _3, false));
+	register_get_handler(kWPANTUNDProperty_MACBlacklistEntriesAsValMap, SPINEL_CAP_MAC_WHITELIST,
+		SPINEL_PROP_MAC_BLACKLIST, boost::bind(unpack_mac_blacklist_entries, _1, _2, _3, true));
+	register_get_handler(kWPANTUNDProperty_ChannelMonitorChannelQuality, SPINEL_CAP_CHANNEL_MONITOR,
+		SPINEL_PROP_CHANNEL_MONITOR_CHANNEL_OCCUPANCY, boost::bind(unpack_channel_monitor_channel_quality, _1, _2, _3, false));
+	register_get_handler(kWPANTUNDProperty_ChannelMonitorChannelQualityAsValMap, SPINEL_CAP_CHANNEL_MONITOR,
+		SPINEL_PROP_CHANNEL_MONITOR_CHANNEL_OCCUPANCY, boost::bind(unpack_channel_monitor_channel_quality, _1, _2, _3, true));
+	register_get_handler(kWPANTUNDProperty_ChannelManagerSupportedChannelMask, SPINEL_CAP_CHANNEL_MANAGER,
+		SPINEL_PROP_CHANNEL_MANAGER_SUPPORTED_CHANNELS, unpack_channel_mask);
+	register_get_handler(kWPANTUNDProperty_ChannelManagerFavoredChannelMask, SPINEL_CAP_CHANNEL_MANAGER,
+		SPINEL_PROP_CHANNEL_MANAGER_FAVORED_CHANNELS, unpack_channel_mask);
 
 
 	// Properties with specific handler methods
@@ -1687,8 +1702,21 @@ SpinelNCPInstance::regsiter_all_get_handlers(void)
 	REGISTER_GET_HANDLER(NetworkIsCommissioned);
 	REGISTER_GET_HANDLER(ThreadRouterID);
 	REGISTER_GET_HANDLER(ThreadConfigFilterRLOCAddresses);
+	REGISTER_GET_HANDLER(IPv6MeshLocalPrefix);
+	REGISTER_GET_HANDLER(IPv6MeshLocalAddress);
+	REGISTER_GET_HANDLER(IPv6LinkLocalAddress);
 
 #undef REGISTER_GET_HANDLER
+
+#define REGISTER_GET_HANDLER_CAP(name, capability)                     \
+	register_get_handler(kWPANTUNDProperty_##name, capability,         \
+		boost::bind(&SpinelNCPInstance::get_prop_##name, this, _1))
+
+	REGISTER_GET_HANDLER_CAP(CommissionerEnergyScanResult, SPINEL_CAP_THREAD_COMMISSIONER);
+	REGISTER_GET_HANDLER_CAP(CommissionerPanIdConflictResult, SPINEL_CAP_THREAD_COMMISSIONER);
+
+#undef REGISTER_GET_HANDLER_CAP
+
 }
 
 void
@@ -1714,6 +1742,50 @@ void
 SpinelNCPInstance::get_prop_ThreadConfigFilterRLOCAddresses(CallbackWithStatusArg1 cb)
 {
 	cb(kWPANTUNDStatus_Ok, boost::any(mFilterRLOCAddresses));
+}
+
+void
+SpinelNCPInstance::get_prop_CommissionerEnergyScanResult(CallbackWithStatusArg1 cb)
+{
+	cb(kWPANTUNDStatus_Ok, boost::any(mCommissionerEnergyScanResult));
+}
+
+void
+SpinelNCPInstance::get_prop_CommissionerPanIdConflictResult(CallbackWithStatusArg1 cb)
+{
+	cb(kWPANTUNDStatus_Ok, boost::any(mCommissionerPanIdConflictResult));
+}
+
+void
+SpinelNCPInstance::get_prop_IPv6MeshLocalPrefix(CallbackWithStatusArg1 cb)
+{
+	if (!buffer_is_nonzero(mNCPV6Prefix, sizeof(mNCPV6Prefix))) {
+		prop_getter_simple(cb, SPINEL_PROP_IPV6_ML_PREFIX, SPINEL_DATATYPE_IPv6ADDR_S);
+	} else {
+		struct in6_addr addr = mNCPMeshLocalAddress;
+		memset(addr.s6_addr + 8, 0, 8);
+		cb(kWPANTUNDStatus_Ok, boost::any(in6_addr_to_string(addr)));
+	}
+}
+
+void
+SpinelNCPInstance::get_prop_IPv6MeshLocalAddress(CallbackWithStatusArg1 cb)
+{
+	if (!buffer_is_nonzero(mNCPV6Prefix, sizeof(mNCPV6Prefix))) {
+		prop_getter_simple(cb, SPINEL_PROP_IPV6_ML_ADDR, SPINEL_DATATYPE_IPv6ADDR_S);
+	} else {
+		cb(kWPANTUNDStatus_Ok, boost::any(in6_addr_to_string(mNCPMeshLocalAddress)));
+	}
+}
+
+void
+SpinelNCPInstance::get_prop_IPv6LinkLocalAddress(CallbackWithStatusArg1 cb)
+{
+	if (!IN6_IS_ADDR_LINKLOCAL(&mNCPLinkLocalAddress)) {
+		prop_getter_simple(cb, SPINEL_PROP_IPV6_LL_ADDR, SPINEL_DATATYPE_IPv6ADDR_S);
+	} else {
+		cb(kWPANTUNDStatus_Ok, boost::any(in6_addr_to_string(mNCPLinkLocalAddress)));
+	}
 }
 
 
@@ -1748,320 +1820,7 @@ SpinelNCPInstance::property_get_value(
 
 
 
-	} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_CommissionerState)) {
-		if (!mCapabilities.count(SPINEL_CAP_THREAD_COMMISSIONER)) {
-			cb(kWPANTUNDStatus_FeatureNotSupported, boost::any(std::string("Thread Commissioner feature is not supported by NCP")));
-		} else {
-			start_new_task(SpinelNCPTaskSendCommand::Factory(this)
-				.set_callback(cb)
-				.add_command(
-					SpinelPackData(SPINEL_FRAME_PACK_CMD_PROP_VALUE_GET, SPINEL_PROP_MESHCOP_COMMISSIONER_STATE)
-				)
-				.set_reply_unpacker(unpack_commissioner_state)
-				.finish()
-			);
-		}
 
-	} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_CommissionerProvisioningUrl)) {
-		if (!mCapabilities.count(SPINEL_CAP_THREAD_COMMISSIONER)) {
-			cb(kWPANTUNDStatus_FeatureNotSupported, boost::any(std::string("Thread Commissioner feature is not supported by NCP")));
-		} else {
-			SIMPLE_SPINEL_GET(SPINEL_PROP_MESHCOP_COMMISSIONER_PROVISIONING_URL, SPINEL_DATATYPE_UTF8_S);
-		}
-
-	} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_CommissionerSessionId)) {
-		if (!mCapabilities.count(SPINEL_CAP_THREAD_COMMISSIONER)) {
-			cb(kWPANTUNDStatus_FeatureNotSupported, boost::any(std::string("Thread Commissioner feature is not supported by NCP")));
-		} else {
-			SIMPLE_SPINEL_GET(SPINEL_PROP_MESHCOP_COMMISSIONER_SESSION_ID, SPINEL_DATATYPE_UINT16_S);
-		}
-
-	} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_CommissionerEnergyScanResult)) {
-		if (!mCapabilities.count(SPINEL_CAP_THREAD_COMMISSIONER)) {
-			cb(kWPANTUNDStatus_FeatureNotSupported, boost::any(std::string("Thread Commissioner feature is not supported by NCP")));
-		} else {
-			cb(kWPANTUNDStatus_Ok, boost::any(mCommissionerEnergyScanResult));
-		}
-
-	} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_CommissionerPanIdConflictResult)) {
-		if (!mCapabilities.count(SPINEL_CAP_THREAD_COMMISSIONER)) {
-			cb(kWPANTUNDStatus_FeatureNotSupported, boost::any(std::string("Thread Commissioner feature is not supported by NCP")));
-		} else {
-			cb(kWPANTUNDStatus_Ok, boost::any(mCommissionerPanIdConflictResult));
-		}
-
-	} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_IPv6MeshLocalPrefix) && !buffer_is_nonzero(mNCPV6Prefix, sizeof(mNCPV6Prefix))) {
-		SIMPLE_SPINEL_GET(SPINEL_PROP_IPV6_ML_PREFIX, SPINEL_DATATYPE_IPv6ADDR_S);
-
-	} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_IPv6MeshLocalAddress) && !buffer_is_nonzero(mNCPV6Prefix, sizeof(mNCPV6Prefix))) {
-		SIMPLE_SPINEL_GET(SPINEL_PROP_IPV6_ML_ADDR, SPINEL_DATATYPE_IPv6ADDR_S);
-
-	} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_IPv6LinkLocalAddress) && !IN6_IS_ADDR_LINKLOCAL(&mNCPLinkLocalAddress)) {
-		SIMPLE_SPINEL_GET(SPINEL_PROP_IPV6_LL_ADDR, SPINEL_DATATYPE_IPv6ADDR_S);
-
-	} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_OpenThreadDebugTestAssert)) {
-		SIMPLE_SPINEL_GET(SPINEL_PROP_DEBUG_TEST_ASSERT, SPINEL_DATATYPE_BOOL_S);
-
-	} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_OpenThreadDebugTestWatchdog)) {
-		SIMPLE_SPINEL_GET(SPINEL_PROP_DEBUG_TEST_WATCHDOG, SPINEL_DATATYPE_BOOL_S);
-
-	} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_MACWhitelistEnabled)) {
-		if (!mCapabilities.count(SPINEL_CAP_MAC_WHITELIST)) {
-			cb(kWPANTUNDStatus_FeatureNotSupported, boost::any(std::string("MAC whitelist feature not supported by NCP")));
-		} else {
-			SIMPLE_SPINEL_GET(SPINEL_PROP_MAC_WHITELIST_ENABLED, SPINEL_DATATYPE_BOOL_S);
-		}
-
-	} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_MACWhitelistEntries)) {
-		if (!mCapabilities.count(SPINEL_CAP_MAC_WHITELIST)) {
-			cb(kWPANTUNDStatus_FeatureNotSupported, boost::any(std::string("MAC whitelist feature not supported by NCP")));
-		} else {
-			start_new_task(SpinelNCPTaskSendCommand::Factory(this)
-				.set_callback(cb)
-				.add_command(
-					SpinelPackData(SPINEL_FRAME_PACK_CMD_PROP_VALUE_GET, SPINEL_PROP_MAC_WHITELIST)
-				)
-				.set_reply_unpacker(boost::bind(unpack_mac_whitelist_entries, _1, _2, _3, false))
-				.finish()
-			);
-		}
-
-	} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_MACWhitelistEntriesAsValMap)) {
-		if (!mCapabilities.count(SPINEL_CAP_MAC_WHITELIST)) {
-			cb(kWPANTUNDStatus_FeatureNotSupported, boost::any(std::string("MAC whitelist feature not supported by NCP")));
-		} else {
-			start_new_task(SpinelNCPTaskSendCommand::Factory(this)
-				.set_callback(cb)
-				.add_command(
-					SpinelPackData(SPINEL_FRAME_PACK_CMD_PROP_VALUE_GET, SPINEL_PROP_MAC_WHITELIST)
-				)
-				.set_reply_unpacker(boost::bind(unpack_mac_whitelist_entries, _1, _2, _3, true))
-				.finish()
-			);
-		}
-
-	} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_MACBlacklistEntries)) {
-		if (!mCapabilities.count(SPINEL_CAP_MAC_WHITELIST)) {
-			cb(kWPANTUNDStatus_FeatureNotSupported, boost::any(std::string("MAC blacklist feature not supported by NCP")));
-		} else {
-			start_new_task(SpinelNCPTaskSendCommand::Factory(this)
-				.set_callback(cb)
-				.add_command(
-					SpinelPackData(SPINEL_FRAME_PACK_CMD_PROP_VALUE_GET, SPINEL_PROP_MAC_BLACKLIST)
-				)
-				.set_reply_unpacker(boost::bind(unpack_mac_blacklist_entries, _1, _2, _3, false))
-				.finish()
-			);
-		}
-
-	} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_MACBlacklistEntriesAsValMap)) {
-		if (!mCapabilities.count(SPINEL_CAP_MAC_WHITELIST)) {
-			cb(kWPANTUNDStatus_FeatureNotSupported, boost::any(std::string("MAC blacklist feature not supported by NCP")));
-		} else {
-			start_new_task(SpinelNCPTaskSendCommand::Factory(this)
-				.set_callback(cb)
-				.add_command(
-					SpinelPackData(SPINEL_FRAME_PACK_CMD_PROP_VALUE_GET, SPINEL_PROP_MAC_BLACKLIST)
-				)
-				.set_reply_unpacker(boost::bind(unpack_mac_blacklist_entries, _1, _2, _3, true))
-				.finish()
-			);
-		}
-
-	} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_MACBlacklistEnabled)) {
-		if (!mCapabilities.count(SPINEL_CAP_MAC_WHITELIST)) {
-			cb(kWPANTUNDStatus_FeatureNotSupported, boost::any(std::string("MAC Blacklist feature not supported by NCP")));
-		} else {
-			SIMPLE_SPINEL_GET(SPINEL_PROP_MAC_BLACKLIST_ENABLED, SPINEL_DATATYPE_BOOL_S);
-		}
-
-	} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_JamDetectionStatus)) {
-		if (!mCapabilities.count(SPINEL_CAP_JAM_DETECT)) {
-			cb(kWPANTUNDStatus_FeatureNotSupported, boost::any(std::string("Jam Detection Feature Not Supported")));
-		} else {
-			SIMPLE_SPINEL_GET(SPINEL_PROP_JAM_DETECTED, SPINEL_DATATYPE_BOOL_S);
-		}
-
-	} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_TmfProxyEnabled)) {
-		SIMPLE_SPINEL_GET(SPINEL_PROP_THREAD_TMF_PROXY_ENABLED, SPINEL_DATATYPE_BOOL_S);
-
-	} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_JamDetectionEnable)) {
-		if (!mCapabilities.count(SPINEL_CAP_JAM_DETECT)) {
-			cb(kWPANTUNDStatus_FeatureNotSupported, boost::any(std::string("Jam Detection Feature Not Supported")));
-		} else {
-			SIMPLE_SPINEL_GET(SPINEL_PROP_JAM_DETECT_ENABLE, SPINEL_DATATYPE_BOOL_S);
-		}
-
-	} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_JamDetectionRssiThreshold)) {
-		if (!mCapabilities.count(SPINEL_CAP_JAM_DETECT)) {
-			cb(kWPANTUNDStatus_FeatureNotSupported, boost::any(std::string("Jam Detection Feature Not Supported")));
-		} else {
-			SIMPLE_SPINEL_GET(SPINEL_PROP_JAM_DETECT_RSSI_THRESHOLD, SPINEL_DATATYPE_INT8_S);
-		}
-
-	} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_JamDetectionWindow)) {
-		if (!mCapabilities.count(SPINEL_CAP_JAM_DETECT)) {
-			cb(kWPANTUNDStatus_FeatureNotSupported, boost::any(std::string("Jam Detection Feature Not Supported")));
-		} else {
-			SIMPLE_SPINEL_GET(SPINEL_PROP_JAM_DETECT_WINDOW, SPINEL_DATATYPE_UINT8_S);
-		}
-
-	} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_JamDetectionBusyPeriod)) {
-		if (!mCapabilities.count(SPINEL_CAP_JAM_DETECT)) {
-			cb(kWPANTUNDStatus_FeatureNotSupported, boost::any(std::string("Jam Detection Feature Not Supported")));
-		} else {
-			SIMPLE_SPINEL_GET(SPINEL_PROP_JAM_DETECT_BUSY, SPINEL_DATATYPE_UINT8_S);
-		}
-
-	} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_JamDetectionDebugHistoryBitmap)) {
-		if (!mCapabilities.count(SPINEL_CAP_JAM_DETECT)) {
-			cb(kWPANTUNDStatus_FeatureNotSupported, boost::any(std::string("Jam Detection Feature Not Supported")));
-		} else {
-			start_new_task(SpinelNCPTaskSendCommand::Factory(this)
-				.set_callback(cb)
-				.add_command(
-					SpinelPackData(SPINEL_FRAME_PACK_CMD_PROP_VALUE_GET, SPINEL_PROP_JAM_DETECT_HISTORY_BITMAP)
-				)
-				.set_reply_unpacker(unpack_jam_detect_history_bitmap)
-				.finish()
-			);
-		}
-
-	} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_NCPCCAFailureRate)) {
-		SIMPLE_SPINEL_GET(SPINEL_PROP_MAC_CCA_FAILURE_RATE, SPINEL_DATATYPE_UINT16_S);
-
-	} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_ChildSupervisionInterval)) {
-		if (!mCapabilities.count(SPINEL_CAP_CHILD_SUPERVISION)) {
-			cb(kWPANTUNDStatus_FeatureNotSupported, boost::any(std::string("Child Supervision Feature Not Supported")));
-		} else {
-			SIMPLE_SPINEL_GET(SPINEL_PROP_CHILD_SUPERVISION_INTERVAL, SPINEL_DATATYPE_UINT16_S);
-		}
-
-	} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_ChildSupervisionCheckTimeout)) {
-		if (!mCapabilities.count(SPINEL_CAP_CHILD_SUPERVISION)) {
-			cb(kWPANTUNDStatus_FeatureNotSupported, boost::any(std::string("Child Supervision Feature Not Supported")));
-		} else {
-			SIMPLE_SPINEL_GET(SPINEL_PROP_CHILD_SUPERVISION_CHECK_TIMEOUT, SPINEL_DATATYPE_UINT16_S);
-		}
-
-	} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_ChannelMonitorSampleInterval)) {
-		if (!mCapabilities.count(SPINEL_CAP_CHANNEL_MONITOR)) {
-			cb(kWPANTUNDStatus_FeatureNotSupported, boost::any(std::string("Channel Monitoring Feature Not Supported")));
-		} else {
-			SIMPLE_SPINEL_GET(SPINEL_PROP_CHANNEL_MONITOR_SAMPLE_INTERVAL, SPINEL_DATATYPE_UINT32_S);
-		}
-
-	} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_ChannelMonitorRssiThreshold)) {
-		if (!mCapabilities.count(SPINEL_CAP_CHANNEL_MONITOR)) {
-			cb(kWPANTUNDStatus_FeatureNotSupported, boost::any(std::string("Channel Monitoring Feature Not Supported")));
-		} else {
-			SIMPLE_SPINEL_GET(SPINEL_PROP_CHANNEL_MONITOR_RSSI_THRESHOLD, SPINEL_DATATYPE_INT8_S);
-		}
-
-	} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_ChannelMonitorSampleWindow)) {
-		if (!mCapabilities.count(SPINEL_CAP_CHANNEL_MONITOR)) {
-			cb(kWPANTUNDStatus_FeatureNotSupported, boost::any(std::string("Channel Monitoring Feature Not Supported")));
-		} else {
-			SIMPLE_SPINEL_GET(SPINEL_PROP_CHANNEL_MONITOR_SAMPLE_WINDOW, SPINEL_DATATYPE_UINT32_S);
-		}
-
-	} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_ChannelMonitorSampleCount)) {
-		if (!mCapabilities.count(SPINEL_CAP_CHANNEL_MONITOR)) {
-			cb(kWPANTUNDStatus_FeatureNotSupported, boost::any(std::string("Channel Monitoring Feature Not Supported")));
-		} else {
-			SIMPLE_SPINEL_GET(SPINEL_PROP_CHANNEL_MONITOR_SAMPLE_COUNT, SPINEL_DATATYPE_UINT32_S);
-		}
-
-	} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_ChannelMonitorChannelQuality)) {
-		if (!mCapabilities.count(SPINEL_CAP_CHANNEL_MONITOR)) {
-			cb(kWPANTUNDStatus_FeatureNotSupported, boost::any(std::string("Channel Monitoring Feature Not Supported")));
-		} else {
-			start_new_task(SpinelNCPTaskSendCommand::Factory(this)
-				.set_callback(cb)
-				.add_command(
-					SpinelPackData(SPINEL_FRAME_PACK_CMD_PROP_VALUE_GET, SPINEL_PROP_CHANNEL_MONITOR_CHANNEL_OCCUPANCY)
-				)
-				.set_reply_unpacker(boost::bind(unpack_channel_monitor_channel_quality, _1, _2, _3, false))
-				.finish()
-			);
-		}
-
-	} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_ChannelMonitorChannelQualityAsValMap)) {
-		if (!mCapabilities.count(SPINEL_CAP_CHANNEL_MONITOR)) {
-			cb(kWPANTUNDStatus_FeatureNotSupported, boost::any(std::string("Channel Monitoring Feature Not Supported")));
-		} else {
-			start_new_task(SpinelNCPTaskSendCommand::Factory(this)
-				.set_callback(cb)
-				.add_command(
-					SpinelPackData(SPINEL_FRAME_PACK_CMD_PROP_VALUE_GET, SPINEL_PROP_CHANNEL_MONITOR_CHANNEL_OCCUPANCY)
-				)
-				.set_reply_unpacker(boost::bind(unpack_channel_monitor_channel_quality, _1, _2, _3, true))
-				.finish()
-			);
-		}
-
-	} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_ChannelManagerNewChannel)) {
-		if (!mCapabilities.count(SPINEL_CAP_CHANNEL_MANAGER)) {
-			cb(kWPANTUNDStatus_FeatureNotSupported, boost::any(std::string("Channel Manager Feature Not Supported")));
-		} else {
-			SIMPLE_SPINEL_GET(SPINEL_PROP_CHANNEL_MANAGER_NEW_CHANNEL, SPINEL_DATATYPE_UINT8_S);
-		}
-
-	} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_ChannelManagerDelay)) {
-		if (!mCapabilities.count(SPINEL_CAP_CHANNEL_MANAGER)) {
-			cb(kWPANTUNDStatus_FeatureNotSupported, boost::any(std::string("Channel Manager Feature Not Supported")));
-		} else {
-			SIMPLE_SPINEL_GET(SPINEL_PROP_CHANNEL_MANAGER_DELAY, SPINEL_DATATYPE_UINT16_S);
-		}
-
-	} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_ChannelManagerAutoSelectEnabled)) {
-		if (!mCapabilities.count(SPINEL_CAP_CHANNEL_MANAGER)) {
-			cb(kWPANTUNDStatus_FeatureNotSupported, boost::any(std::string("Channel Manager Feature Not Supported")));
-		} else {
-			SIMPLE_SPINEL_GET(SPINEL_PROP_CHANNEL_MANAGER_AUTO_SELECT_ENABLED, SPINEL_DATATYPE_BOOL_S);
-		}
-
-	} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_ChannelManagerAutoSelectInterval)) {
-		if (!mCapabilities.count(SPINEL_CAP_CHANNEL_MANAGER)) {
-			cb(kWPANTUNDStatus_FeatureNotSupported, boost::any(std::string("Channel Manager Feature Not Supported")));
-		} else {
-			SIMPLE_SPINEL_GET(SPINEL_PROP_CHANNEL_MANAGER_AUTO_SELECT_INTERVAL, SPINEL_DATATYPE_UINT32_S);
-		}
-
-	} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_ChannelManagerChannelSelect)) {
-		if (!mCapabilities.count(SPINEL_CAP_CHANNEL_MANAGER)) {
-			cb(kWPANTUNDStatus_FeatureNotSupported, boost::any(std::string("Channel Manager Feature Not Supported")));
-		} else {
-			SIMPLE_SPINEL_GET(SPINEL_PROP_CHANNEL_MANAGER_CHANNEL_SELECT, SPINEL_DATATYPE_BOOL_S);
-		}
-
-	} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_ChannelManagerSupportedChannelMask)) {
-		if (!mCapabilities.count(SPINEL_CAP_CHANNEL_MANAGER)) {
-			cb(kWPANTUNDStatus_FeatureNotSupported, boost::any(std::string("Channel Manager Feature Not Supported")));
-		} else {
-			start_new_task(SpinelNCPTaskSendCommand::Factory(this)
-				.set_callback(cb)
-				.add_command(
-					SpinelPackData(SPINEL_FRAME_PACK_CMD_PROP_VALUE_GET, SPINEL_PROP_CHANNEL_MANAGER_SUPPORTED_CHANNELS)
-				)
-				.set_reply_unpacker(unpack_channel_mask)
-				.finish()
-			);
-		}
-
-	} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_ChannelManagerFavoredChannelMask)) {
-		if (!mCapabilities.count(SPINEL_CAP_CHANNEL_MANAGER)) {
-			cb(kWPANTUNDStatus_FeatureNotSupported, boost::any(std::string("Channel Manager Feature Not Supported")));
-		} else {
-			start_new_task(SpinelNCPTaskSendCommand::Factory(this)
-				.set_callback(cb)
-				.add_command(
-					SpinelPackData(SPINEL_FRAME_PACK_CMD_PROP_VALUE_GET, SPINEL_PROP_CHANNEL_MANAGER_FAVORED_CHANNELS)
-				)
-				.set_reply_unpacker(unpack_channel_mask)
-				.finish()
-			);
-		}
 
 	} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_NestLabs_LegacyMeshLocalPrefix)) {
 		if (!mCapabilities.count(SPINEL_CAP_NEST_LEGACY_INTERFACE)) {

@@ -217,6 +217,12 @@ private:
 	void get_prop_NetworkIsCommissioned(CallbackWithStatusArg1 cb);
 	void get_prop_ThreadRouterID(CallbackWithStatusArg1 cb);
 	void get_prop_ThreadConfigFilterRLOCAddresses(CallbackWithStatusArg1 cb);
+	void get_prop_CommissionerEnergyScanResult(CallbackWithStatusArg1 cb);
+	void get_prop_CommissionerPanIdConflictResult(CallbackWithStatusArg1 cb);
+	void get_prop_IPv6MeshLocalPrefix(CallbackWithStatusArg1 cb);
+	void get_prop_IPv6MeshLocalAddress(CallbackWithStatusArg1 cb);
+	void get_prop_IPv6LinkLocalAddress(CallbackWithStatusArg1 cb);
+
 
 public:
 
