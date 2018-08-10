@@ -1557,39 +1557,49 @@ SpinelNCPInstance::register_get_handler(const char *prop_name, PropGetHandler ha
 }
 
 void
-SpinelNCPInstance::register_get_handler(const char *prop_name, unsigned int capability, PropGetHandler handler)
+SpinelNCPInstance::register_get_handler_capability(const char *prop_name, unsigned int capability,
+	PropGetHandler handler)
 {
-	register_get_handler(prop_name,
+	register_get_handler(
+		prop_name,
 		boost::bind(&SpinelNCPInstance::check_capability_prop_get, this, _1, _2, capability, handler));
 }
 
 void
-SpinelNCPInstance::register_get_handler(const char *prop_name, spinel_prop_key_t prop_key, const char *reply_format)
+SpinelNCPInstance::register_get_handler_spinel_simple(const char *prop_name, spinel_prop_key_t prop_key,
+	const char *reply_format)
 {
-	register_get_handler(prop_name,
+	register_get_handler(
+		prop_name,
 		boost::bind(&SpinelNCPInstance::get_spinel_prop, this, _1, prop_key, std::string(reply_format)));
 }
 
 void
-SpinelNCPInstance::register_get_handler(const char *prop_name, spinel_prop_key_t prop_key, ReplyUnpacker unpacker)
+SpinelNCPInstance::register_get_handler_spinel_unpacker(const char *prop_name, spinel_prop_key_t prop_key,
+	ReplyUnpacker unpacker)
 {
-	register_get_handler(prop_name,
+	register_get_handler(
+		prop_name,
 		boost::bind(&SpinelNCPInstance::get_spinel_prop_with_unpacker, this, _1, prop_key, unpacker));
 }
 
 void
-SpinelNCPInstance::register_get_handler(const char *prop_name, unsigned int capability, spinel_prop_key_t prop_key,
-	const char *reply_format)
+SpinelNCPInstance::register_get_handler_capability_spinel_simple(const char *prop_name, unsigned int capability,
+	spinel_prop_key_t prop_key,	const char *reply_format)
 {
-	register_get_handler(prop_name, capability,
+	register_get_handler_capability(
+		prop_name,
+		capability,
 		boost::bind(&SpinelNCPInstance::get_spinel_prop, this, _1, prop_key, std::string(reply_format)));
 }
 
 void
-SpinelNCPInstance::register_get_handler(const char *prop_name, unsigned int capability, spinel_prop_key_t prop_key,
-	ReplyUnpacker unpacker)
+SpinelNCPInstance::register_get_handler_capability_spinel_unpacker(const char *prop_name, unsigned int capability,
+	spinel_prop_key_t prop_key,	ReplyUnpacker unpacker)
 {
-	register_get_handler(prop_name, capability,
+	register_get_handler_capability(
+		prop_name,
+		capability,
 		boost::bind(&SpinelNCPInstance::get_spinel_prop_with_unpacker, this, _1, prop_key, unpacker));
 }
 
@@ -1598,252 +1608,252 @@ SpinelNCPInstance::regsiter_all_get_handlers(void)
 {
 	// Simple properties
 
-	register_get_handler(
+	register_get_handler_spinel_simple(
 		kWPANTUNDProperty_NCPCCAThreshold,
 		SPINEL_PROP_PHY_CCA_THRESHOLD, SPINEL_DATATYPE_INT8_S);
-	register_get_handler(
+	register_get_handler_spinel_simple(
 		kWPANTUNDProperty_NCPTXPower,
 		SPINEL_PROP_PHY_TX_POWER, SPINEL_DATATYPE_INT8_S);
-	register_get_handler(
+	register_get_handler_spinel_simple(
 		kWPANTUNDProperty_NCPFrequency,
 		SPINEL_PROP_PHY_FREQ, SPINEL_DATATYPE_INT32_S);
-	register_get_handler(
+	register_get_handler_spinel_simple(
 		kWPANTUNDProperty_NetworkKey,
 		SPINEL_PROP_NET_MASTER_KEY, SPINEL_DATATYPE_DATA_S);
-	register_get_handler(
+	register_get_handler_spinel_simple(
 		kWPANTUNDProperty_NetworkPSKc,
 		SPINEL_PROP_NET_PSKC, SPINEL_DATATYPE_DATA_S);
-	register_get_handler(
+	register_get_handler_spinel_simple(
 		kWPANTUNDProperty_NCPExtendedAddress,
 		SPINEL_PROP_MAC_EXTENDED_ADDR, SPINEL_DATATYPE_EUI64_S);
-	register_get_handler(
+	register_get_handler_spinel_simple(
 		kWPANTUNDProperty_NetworkKeyIndex,
 		SPINEL_PROP_NET_KEY_SEQUENCE_COUNTER, SPINEL_DATATYPE_UINT32_S);
-	register_get_handler(
+	register_get_handler_spinel_simple(
 		kWPANTUNDProperty_NetworkKeySwitchGuardTime,
 		SPINEL_PROP_NET_KEY_SWITCH_GUARDTIME, SPINEL_DATATYPE_UINT32_S);
-	register_get_handler(
+	register_get_handler_spinel_simple(
 		kWPANTUNDProperty_NetworkRole,
 		SPINEL_PROP_NET_ROLE, SPINEL_DATATYPE_UINT8_S);
-	register_get_handler(
+	register_get_handler_spinel_simple(
 		kWPANTUNDProperty_NetworkPartitionId,
 		SPINEL_PROP_NET_PARTITION_ID, SPINEL_DATATYPE_UINT32_S);
-	register_get_handler(
+	register_get_handler_spinel_simple(
 		kWPANTUNDProperty_ThreadRouterUpgradeThreshold,
 		SPINEL_PROP_THREAD_ROUTER_UPGRADE_THRESHOLD, SPINEL_DATATYPE_UINT8_S);
-	register_get_handler(
+	register_get_handler_spinel_simple(
 		kWPANTUNDProperty_ThreadRouterDowngradeThreshold,
 		SPINEL_PROP_THREAD_ROUTER_DOWNGRADE_THRESHOLD, SPINEL_DATATYPE_UINT8_S);
-	register_get_handler(
+	register_get_handler_spinel_simple(
 		kWPANTUNDProperty_NCPRSSI,
 		SPINEL_PROP_PHY_RSSI, SPINEL_DATATYPE_INT8_S);
-	register_get_handler(
+	register_get_handler_spinel_simple(
 		kWPANTUNDProperty_ThreadRLOC16,
 		SPINEL_PROP_THREAD_RLOC16, SPINEL_DATATYPE_UINT16_S);
-	register_get_handler(
+	register_get_handler_spinel_simple(
 		kWPANTUNDProperty_ThreadRouterSelectionJitter,
 		SPINEL_PROP_THREAD_ROUTER_SELECTION_JITTER, SPINEL_DATATYPE_UINT8_S);
-	register_get_handler(
+	register_get_handler_spinel_simple(
 		kWPANTUNDProperty_ThreadLeaderAddress,
 		SPINEL_PROP_THREAD_LEADER_ADDR, SPINEL_DATATYPE_IPv6ADDR_S);
-	register_get_handler(
+	register_get_handler_spinel_simple(
 		kWPANTUNDProperty_ThreadLeaderRouterID,
 		SPINEL_PROP_THREAD_LEADER_RID, SPINEL_DATATYPE_UINT8_S);
-	register_get_handler(
+	register_get_handler_spinel_simple(
 		kWPANTUNDProperty_ThreadLeaderWeight,
 		SPINEL_PROP_THREAD_LEADER_WEIGHT, SPINEL_DATATYPE_UINT8_S);
-	register_get_handler(
+	register_get_handler_spinel_simple(
 		kWPANTUNDProperty_ThreadLeaderLocalWeight,
 		SPINEL_PROP_THREAD_LOCAL_LEADER_WEIGHT, SPINEL_DATATYPE_UINT8_S);
-	register_get_handler(
+	register_get_handler_spinel_simple(
 		kWPANTUNDProperty_ThreadNetworkData,
 		SPINEL_PROP_THREAD_NETWORK_DATA, SPINEL_DATATYPE_DATA_S);
-	register_get_handler(
+	register_get_handler_spinel_simple(
 		kWPANTUNDProperty_ThreadNetworkDataVersion,
 		SPINEL_PROP_THREAD_NETWORK_DATA_VERSION, SPINEL_DATATYPE_UINT8_S);
-	register_get_handler(
+	register_get_handler_spinel_simple(
 		kWPANTUNDProperty_ThreadStableNetworkData,
 		SPINEL_PROP_THREAD_STABLE_NETWORK_DATA, SPINEL_DATATYPE_DATA_S);
-	register_get_handler(
+	register_get_handler_spinel_simple(
 		kWPANTUNDProperty_ThreadLeaderNetworkData,
 		SPINEL_PROP_THREAD_LEADER_NETWORK_DATA, SPINEL_DATATYPE_DATA_S);
-	register_get_handler(
+	register_get_handler_spinel_simple(
 		kWPANTUNDProperty_ThreadStableLeaderNetworkData,
 		SPINEL_PROP_THREAD_STABLE_LEADER_NETWORK_DATA, SPINEL_DATATYPE_DATA_S);
-	register_get_handler(
+	register_get_handler_spinel_simple(
 		kWPANTUNDProperty_ThreadStableNetworkDataVersion,
 		SPINEL_PROP_THREAD_STABLE_NETWORK_DATA_VERSION, SPINEL_DATATYPE_UINT8_S);
-	register_get_handler(
+	register_get_handler_spinel_simple(
 		kWPANTUNDProperty_ThreadRouterRoleEnabled,
 		SPINEL_PROP_THREAD_ROUTER_ROLE_ENABLED, SPINEL_DATATYPE_BOOL_S);
-	register_get_handler(
+	register_get_handler_spinel_simple(
 		kWPANTUNDProperty_ThreadDeviceMode,
 		SPINEL_PROP_THREAD_MODE, SPINEL_DATATYPE_UINT8_S);
-	register_get_handler(
+	register_get_handler_spinel_simple(
 		kWPANTUNDProperty_OpenThreadDebugTestAssert,
 		SPINEL_PROP_DEBUG_TEST_ASSERT, SPINEL_DATATYPE_BOOL_S);
-	register_get_handler(
+	register_get_handler_spinel_simple(
 		kWPANTUNDProperty_OpenThreadDebugTestWatchdog,
 		SPINEL_PROP_DEBUG_TEST_WATCHDOG, SPINEL_DATATYPE_BOOL_S);
-	register_get_handler(
+	register_get_handler_spinel_simple(
 		kWPANTUNDProperty_TmfProxyEnabled,
 		SPINEL_PROP_THREAD_TMF_PROXY_ENABLED, SPINEL_DATATYPE_BOOL_S);
-	register_get_handler(
+	register_get_handler_spinel_simple(
 		kWPANTUNDProperty_NCPCCAFailureRate,
 		SPINEL_PROP_MAC_CCA_FAILURE_RATE, SPINEL_DATATYPE_UINT16_S);
 
 	// Simple properties with capability check
 
-	register_get_handler(
+	register_get_handler_capability_spinel_simple(
 		kWPANTUNDProperty_NCPSleepyPollInterval,
 		SPINEL_CAP_ROLE_SLEEPY,
 		SPINEL_PROP_MAC_DATA_POLL_PERIOD, SPINEL_DATATYPE_UINT32_S);
-	register_get_handler(
+	register_get_handler_capability_spinel_simple(
 		kWPANTUNDProperty_ThreadJoinerState,
 		SPINEL_CAP_THREAD_JOINER,
 		SPINEL_PROP_MESHCOP_JOINER_STATE, SPINEL_DATATYPE_UINT8_S);
-	register_get_handler(
+	register_get_handler_capability_spinel_simple(
 		kWPANTUNDProperty_CommissionerProvisioningUrl,
 		SPINEL_CAP_THREAD_COMMISSIONER,
 		SPINEL_PROP_MESHCOP_COMMISSIONER_PROVISIONING_URL, SPINEL_DATATYPE_UTF8_S);
-	register_get_handler(
+	register_get_handler_capability_spinel_simple(
 		kWPANTUNDProperty_CommissionerSessionId,
 		SPINEL_CAP_THREAD_COMMISSIONER,
 		SPINEL_PROP_MESHCOP_COMMISSIONER_SESSION_ID, SPINEL_DATATYPE_UINT16_S);
-	register_get_handler(
+	register_get_handler_capability_spinel_simple(
 		kWPANTUNDProperty_MACWhitelistEnabled,
 		SPINEL_CAP_MAC_WHITELIST,
 		SPINEL_PROP_MAC_WHITELIST_ENABLED, SPINEL_DATATYPE_BOOL_S);
-	register_get_handler(
+	register_get_handler_capability_spinel_simple(
 		kWPANTUNDProperty_MACBlacklistEnabled,
 		SPINEL_CAP_MAC_WHITELIST,
 		SPINEL_PROP_MAC_BLACKLIST_ENABLED, SPINEL_DATATYPE_BOOL_S);
-	register_get_handler(
+	register_get_handler_capability_spinel_simple(
 		kWPANTUNDProperty_JamDetectionStatus,
 		SPINEL_CAP_JAM_DETECT,
 		SPINEL_PROP_JAM_DETECTED, SPINEL_DATATYPE_BOOL_S);
-	register_get_handler(
+	register_get_handler_capability_spinel_simple(
 		kWPANTUNDProperty_JamDetectionEnable,
 		SPINEL_CAP_JAM_DETECT,
 		SPINEL_PROP_JAM_DETECT_ENABLE, SPINEL_DATATYPE_BOOL_S);
-	register_get_handler(
+	register_get_handler_capability_spinel_simple(
 		kWPANTUNDProperty_JamDetectionRssiThreshold,
 		SPINEL_CAP_JAM_DETECT,
 		SPINEL_PROP_JAM_DETECT_RSSI_THRESHOLD, SPINEL_DATATYPE_INT8_S);
-	register_get_handler(
+	register_get_handler_capability_spinel_simple(
 		kWPANTUNDProperty_JamDetectionWindow,
 		SPINEL_CAP_JAM_DETECT,
 		SPINEL_PROP_JAM_DETECT_WINDOW, SPINEL_DATATYPE_UINT8_S);
-	register_get_handler(
+	register_get_handler_capability_spinel_simple(
 		kWPANTUNDProperty_JamDetectionBusyPeriod,
 		SPINEL_CAP_JAM_DETECT,
 		SPINEL_PROP_JAM_DETECT_BUSY, SPINEL_DATATYPE_UINT8_S);
-	register_get_handler(
+	register_get_handler_capability_spinel_simple(
 		kWPANTUNDProperty_JamDetectionDebugHistoryBitmap,
 		SPINEL_CAP_JAM_DETECT,
 		SPINEL_PROP_JAM_DETECT_HISTORY_BITMAP, SPINEL_DATATYPE_UINT64_S);
-	register_get_handler(
+	register_get_handler_capability_spinel_simple(
 		kWPANTUNDProperty_ChildSupervisionInterval,
 		SPINEL_CAP_CHILD_SUPERVISION,
 		SPINEL_PROP_CHILD_SUPERVISION_INTERVAL, SPINEL_DATATYPE_UINT16_S);
-	register_get_handler(
+	register_get_handler_capability_spinel_simple(
 		kWPANTUNDProperty_ChildSupervisionCheckTimeout,
 		SPINEL_CAP_CHILD_SUPERVISION,
 		SPINEL_PROP_CHILD_SUPERVISION_CHECK_TIMEOUT, SPINEL_DATATYPE_UINT16_S);
-	register_get_handler(
+	register_get_handler_capability_spinel_simple(
 		kWPANTUNDProperty_ChannelMonitorSampleInterval,
 		SPINEL_CAP_CHANNEL_MONITOR,
 		SPINEL_PROP_CHANNEL_MONITOR_SAMPLE_INTERVAL, SPINEL_DATATYPE_UINT32_S);
-	register_get_handler(
+	register_get_handler_capability_spinel_simple(
 		kWPANTUNDProperty_ChannelMonitorRssiThreshold,
 		SPINEL_CAP_CHANNEL_MONITOR,
 		SPINEL_PROP_CHANNEL_MONITOR_RSSI_THRESHOLD, SPINEL_DATATYPE_INT8_S);
-	register_get_handler(
+	register_get_handler_capability_spinel_simple(
 		kWPANTUNDProperty_ChannelMonitorSampleWindow,
 		SPINEL_CAP_CHANNEL_MONITOR,
 		SPINEL_PROP_CHANNEL_MONITOR_SAMPLE_WINDOW, SPINEL_DATATYPE_UINT32_S);
-	register_get_handler(
+	register_get_handler_capability_spinel_simple(
 		kWPANTUNDProperty_ChannelMonitorSampleCount,
 		SPINEL_CAP_CHANNEL_MONITOR,
 		SPINEL_PROP_CHANNEL_MONITOR_SAMPLE_COUNT, SPINEL_DATATYPE_UINT32_S);
-	register_get_handler(
+	register_get_handler_capability_spinel_simple(
 		kWPANTUNDProperty_ChannelManagerNewChannel,
 		SPINEL_CAP_CHANNEL_MANAGER,
 		SPINEL_PROP_CHANNEL_MANAGER_NEW_CHANNEL, SPINEL_DATATYPE_UINT8_S);
-	register_get_handler(
+	register_get_handler_capability_spinel_simple(
 		kWPANTUNDProperty_ChannelManagerDelay,
 		SPINEL_CAP_CHANNEL_MANAGER,
 		SPINEL_PROP_CHANNEL_MANAGER_DELAY, SPINEL_DATATYPE_UINT16_S);
-	register_get_handler(
+	register_get_handler_capability_spinel_simple(
 		kWPANTUNDProperty_ChannelManagerAutoSelectEnabled,
 		SPINEL_CAP_CHANNEL_MANAGER,
 		SPINEL_PROP_CHANNEL_MANAGER_AUTO_SELECT_ENABLED, SPINEL_DATATYPE_BOOL_S);
-	register_get_handler(
+	register_get_handler_capability_spinel_simple(
 		kWPANTUNDProperty_ChannelManagerAutoSelectInterval,
 		SPINEL_CAP_CHANNEL_MANAGER,
 		SPINEL_PROP_CHANNEL_MANAGER_AUTO_SELECT_INTERVAL, SPINEL_DATATYPE_UINT32_S);
-	register_get_handler(
+	register_get_handler_capability_spinel_simple(
 		kWPANTUNDProperty_ChannelManagerChannelSelect,
 		SPINEL_CAP_CHANNEL_MANAGER,
 		SPINEL_PROP_CHANNEL_MANAGER_CHANNEL_SELECT, SPINEL_DATATYPE_BOOL_S);
 
 	// Properties with unpacker
 
-	register_get_handler(
+	register_get_handler_spinel_unpacker(
 		kWPANTUNDProperty_NCPChannelMask,
 		SPINEL_PROP_PHY_CHAN_SUPPORTED, unpack_channel_mask);
-	register_get_handler(
+	register_get_handler_spinel_unpacker(
 		kWPANTUNDProperty_ThreadActiveDataset,
 		SPINEL_PROP_THREAD_ACTIVE_DATASET, boost::bind(unpack_dataset, _1, _2, _3, false));
-	register_get_handler(
+	register_get_handler_spinel_unpacker(
 		kWPANTUNDProperty_ThreadActiveDatasetAsValMap,
 		SPINEL_PROP_THREAD_ACTIVE_DATASET, boost::bind(unpack_dataset, _1, _2, _3, true));
-	register_get_handler(
+	register_get_handler_spinel_unpacker(
 		kWPANTUNDProperty_ThreadPendingDataset,
 		SPINEL_PROP_THREAD_PENDING_DATASET, boost::bind(unpack_dataset, _1, _2, _3, false));
-	register_get_handler(
+	register_get_handler_spinel_unpacker(
 		kWPANTUNDProperty_ThreadPendingDatasetAsValMap,
 		SPINEL_PROP_THREAD_PENDING_DATASET, boost::bind(unpack_dataset, _1, _2, _3, true));
 
 	// Properties with unpacker and capability check
 
-	register_get_handler(
+	register_get_handler_capability_spinel_unpacker(
 		kWPANTUNDProperty_NCPMCUPowerState,
 		SPINEL_CAP_MCU_POWER_STATE,
 		SPINEL_PROP_MCU_POWER_STATE, unpack_mcu_power_state);
-	register_get_handler(
+	register_get_handler_capability_spinel_unpacker(
 		kWPANTUNDProperty_CommissionerState,
 		SPINEL_CAP_THREAD_COMMISSIONER,
 		SPINEL_PROP_MESHCOP_COMMISSIONER_STATE, unpack_commissioner_state);
-	register_get_handler(
+	register_get_handler_capability_spinel_unpacker(
 		kWPANTUNDProperty_MACWhitelistEntries,
 		SPINEL_CAP_MAC_WHITELIST,
 		SPINEL_PROP_MAC_WHITELIST, boost::bind(unpack_mac_whitelist_entries, _1, _2, _3, false));
-	register_get_handler(
+	register_get_handler_capability_spinel_unpacker(
 		kWPANTUNDProperty_MACWhitelistEntriesAsValMap,
 		SPINEL_CAP_MAC_WHITELIST,
 		SPINEL_PROP_MAC_WHITELIST, boost::bind(unpack_mac_whitelist_entries, _1, _2, _3, true));
-	register_get_handler(
+	register_get_handler_capability_spinel_unpacker(
 		kWPANTUNDProperty_MACBlacklistEntries,
 		SPINEL_CAP_MAC_WHITELIST,
 		SPINEL_PROP_MAC_BLACKLIST, boost::bind(unpack_mac_blacklist_entries, _1, _2, _3, false));
-	register_get_handler(
+	register_get_handler_capability_spinel_unpacker(
 		kWPANTUNDProperty_MACBlacklistEntriesAsValMap,
 		SPINEL_CAP_MAC_WHITELIST,
 		SPINEL_PROP_MAC_BLACKLIST, boost::bind(unpack_mac_blacklist_entries, _1, _2, _3, true));
-	register_get_handler(
+	register_get_handler_capability_spinel_unpacker(
 		kWPANTUNDProperty_ChannelMonitorChannelQuality,
 		SPINEL_CAP_CHANNEL_MONITOR,
 		SPINEL_PROP_CHANNEL_MONITOR_CHANNEL_OCCUPANCY, boost::bind(unpack_channel_occupancy, _1, _2, _3, false));
-	register_get_handler(
+	register_get_handler_capability_spinel_unpacker(
 		kWPANTUNDProperty_ChannelMonitorChannelQualityAsValMap,
 		SPINEL_CAP_CHANNEL_MONITOR,
 		SPINEL_PROP_CHANNEL_MONITOR_CHANNEL_OCCUPANCY, boost::bind(unpack_channel_occupancy, _1, _2, _3, true));
-	register_get_handler(
+	register_get_handler_capability_spinel_unpacker(
 		kWPANTUNDProperty_ChannelManagerSupportedChannelMask,
 		SPINEL_CAP_CHANNEL_MANAGER,
 		SPINEL_PROP_CHANNEL_MANAGER_SUPPORTED_CHANNELS, unpack_channel_mask);
-	register_get_handler(
+	register_get_handler_capability_spinel_unpacker(
 		kWPANTUNDProperty_ChannelManagerFavoredChannelMask,
 		SPINEL_CAP_CHANNEL_MANAGER,
 		SPINEL_PROP_CHANNEL_MANAGER_FAVORED_CHANNELS, unpack_channel_mask);
@@ -1875,11 +1885,11 @@ SpinelNCPInstance::regsiter_all_get_handlers(void)
 
 	// Properties with dedicated handler methods and capability check.
 
-	register_get_handler(
+	register_get_handler_capability(
 		kWPANTUNDProperty_CommissionerEnergyScanResult,
 		SPINEL_CAP_THREAD_COMMISSIONER,
 		boost::bind(&SpinelNCPInstance::get_prop_CommissionerEnergyScanResult, this, _1));
-	register_get_handler(
+	register_get_handler_capability(
 		kWPANTUNDProperty_CommissionerPanIdConflictResult,
 		SPINEL_CAP_THREAD_COMMISSIONER,
 		boost::bind(&SpinelNCPInstance::get_prop_CommissionerPanIdConflictResult, this, _1));

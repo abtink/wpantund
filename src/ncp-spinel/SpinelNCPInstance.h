@@ -201,17 +201,18 @@ private:
 			PropGetHandler handler);
 
 	void register_get_handler(const char *prop_name, PropGetHandler handler);
-	void register_get_handler(const char *prop_name, unsigned int capability, PropGetHandler handler);
+	void register_get_handler_capability(const char *prop_name, unsigned int capability, PropGetHandler handler);
 
-	void register_get_handler(const char *prop_name, spinel_prop_key_t prop_key, const char *reply_format);
-	void register_get_handler(const char *prop_name, spinel_prop_key_t prop_key, ReplyUnpacker unpacker);
-	void register_get_handler(const char *prop_name, unsigned int capability, spinel_prop_key_t prop_key,
+	void register_get_handler_spinel_simple(const char *prop_name, spinel_prop_key_t prop_key,
 			const char *reply_format);
-	void register_get_handler(const char *prop_name, unsigned int capability, spinel_prop_key_t prop_key,
+	void register_get_handler_spinel_unpacker(const char *prop_name, spinel_prop_key_t prop_key,
 			ReplyUnpacker unpacker);
+	void register_get_handler_capability_spinel_simple(const char *prop_name, unsigned int capability,
+			spinel_prop_key_t prop_key, const char *reply_format);
+	void register_get_handler_capability_spinel_unpacker(const char *prop_name, unsigned int capability,
+			spinel_prop_key_t prop_key, ReplyUnpacker unpacker);
 
 	void regsiter_all_get_handlers(void);
-
 
 	void get_prop_ConfigNCPDriverName(CallbackWithStatusArg1 cb);
 	void get_prop_NetworkIsCommissioned(CallbackWithStatusArg1 cb);
