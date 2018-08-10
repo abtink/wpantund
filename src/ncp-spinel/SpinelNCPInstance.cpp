@@ -1507,8 +1507,6 @@ void
 SpinelNCPInstance::get_spinel_prop(CallbackWithStatusArg1 cb, spinel_prop_key_t prop_key,
 	const std::string &reply_format)
 {
-	syslog(LOG_INFO, "ABTIN ------> get_spinel_prop(%s)", spinel_prop_key_to_cstr(prop_key));
-
 	start_new_task(SpinelNCPTaskSendCommand::Factory(this)
 		.set_callback(cb)
 		.add_command(SpinelPackData(SPINEL_FRAME_PACK_CMD_PROP_VALUE_GET, prop_key))
@@ -1521,8 +1519,6 @@ void
 SpinelNCPInstance::get_spinel_prop_with_unpacker(CallbackWithStatusArg1 cb, spinel_prop_key_t prop_key,
 	ReplyUnpacker unpacker)
 {
-	syslog(LOG_INFO, "ABTIN ------> get_spinel_prop_with_unpacker(%s)", spinel_prop_key_to_cstr(prop_key));
-
 	start_new_task(SpinelNCPTaskSendCommand::Factory(this)
 		.set_callback(cb)
 		.add_command(SpinelPackData(SPINEL_FRAME_PACK_CMD_PROP_VALUE_GET, prop_key))
@@ -1534,9 +1530,6 @@ SpinelNCPInstance::get_spinel_prop_with_unpacker(CallbackWithStatusArg1 cb, spin
 void SpinelNCPInstance::check_capability_prop_get(CallbackWithStatusArg1 cb, const std::string &prop_name,
 	unsigned int capability, PropGetHandler handler)
 {
-	syslog(LOG_INFO, "ABTIN ------> check_capability_prop_get(): %s %s", prop_name.c_str(),
-		spinel_capability_to_cstr(capability));
-
 	if (mCapabilities.count(capability)) {
 		handler(cb, prop_name);
 	} else {
