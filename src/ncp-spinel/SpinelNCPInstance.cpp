@@ -1506,10 +1506,10 @@ SpinelNCPInstance::update_mesh_local_prefix(struct in6_addr *addr)
 // MARK: Property Get Handlers
 
 void
-SpinelNCPInstance::prop_getter_simple(CallbackWithStatusArg1 cb, spinel_prop_key_t prop_key,
+SpinelNCPInstance::get_spinel_prop(CallbackWithStatusArg1 cb, spinel_prop_key_t prop_key,
 	const std::string &reply_format)
 {
-	syslog(LOG_INFO, "ABTIN ------> prop_getter_simple(%s)", spinel_prop_key_to_cstr(prop_key));
+	syslog(LOG_INFO, "ABTIN ------> get_spinel_prop(%s)", spinel_prop_key_to_cstr(prop_key));
 
 	start_new_task(SpinelNCPTaskSendCommand::Factory(this)
 		.set_callback(cb)
@@ -1520,9 +1520,10 @@ SpinelNCPInstance::prop_getter_simple(CallbackWithStatusArg1 cb, spinel_prop_key
 }
 
 void
-SpinelNCPInstance::prop_getter_unpacker(CallbackWithStatusArg1 cb, spinel_prop_key_t prop_key, ReplyUnpacker unpacker)
+SpinelNCPInstance::get_spinel_prop_with_unpacker(CallbackWithStatusArg1 cb, spinel_prop_key_t prop_key,
+	ReplyUnpacker unpacker)
 {
-	syslog(LOG_INFO, "ABTIN ------> prop_getter_unpacker(%s)", spinel_prop_key_to_cstr(prop_key));
+	syslog(LOG_INFO, "ABTIN ------> get_spinel_prop_with_unpacker(%s)", spinel_prop_key_to_cstr(prop_key));
 
 	start_new_task(SpinelNCPTaskSendCommand::Factory(this)
 		.set_callback(cb)
@@ -1532,10 +1533,10 @@ SpinelNCPInstance::prop_getter_unpacker(CallbackWithStatusArg1 cb, spinel_prop_k
 	);
 }
 
-void SpinelNCPInstance::prop_getter_check_capability(CallbackWithStatusArg1 cb,	const std::string &prop_name,
+void SpinelNCPInstance::check_capability_prop_get(CallbackWithStatusArg1 cb, const std::string &prop_name,
 	unsigned int capability, PropGetHandler handler)
 {
-	syslog(LOG_INFO, "ABTIN ------> prop_getter_check_capability(): %s %s", prop_name.c_str(),
+	syslog(LOG_INFO, "ABTIN ------> check_capability_prop_get(): %s %s", prop_name.c_str(),
 		spinel_capability_to_cstr(capability));
 
 	if (mCapabilities.count(capability)) {
@@ -1559,21 +1560,21 @@ void
 SpinelNCPInstance::register_get_handler(const char *prop_name, unsigned int capability, PropGetHandler handler)
 {
 	register_get_handler(prop_name,
-		boost::bind(&SpinelNCPInstance::prop_getter_check_capability, this, _1, _2,	capability, handler));
+		boost::bind(&SpinelNCPInstance::check_capability_prop_get, this, _1, _2, capability, handler));
 }
 
 void
 SpinelNCPInstance::register_get_handler(const char *prop_name, spinel_prop_key_t prop_key, const char *reply_format)
 {
 	register_get_handler(prop_name,
-		boost::bind(&SpinelNCPInstance::prop_getter_simple, this, _1, prop_key, std::string(reply_format)));
+		boost::bind(&SpinelNCPInstance::get_spinel_prop, this, _1, prop_key, std::string(reply_format)));
 }
 
 void
 SpinelNCPInstance::register_get_handler(const char *prop_name, spinel_prop_key_t prop_key, ReplyUnpacker unpacker)
 {
 	register_get_handler(prop_name,
-		boost::bind(&SpinelNCPInstance::prop_getter_unpacker, this, _1, prop_key, unpacker));
+		boost::bind(&SpinelNCPInstance::get_spinel_prop_with_unpacker, this, _1, prop_key, unpacker));
 }
 
 void
@@ -1581,7 +1582,7 @@ SpinelNCPInstance::register_get_handler(const char *prop_name, unsigned int capa
 	const char *reply_format)
 {
 	register_get_handler(prop_name, capability,
-		boost::bind(&SpinelNCPInstance::prop_getter_simple, this, _1, prop_key, std::string(reply_format)));
+		boost::bind(&SpinelNCPInstance::get_spinel_prop, this, _1, prop_key, std::string(reply_format)));
 }
 
 void
@@ -1589,7 +1590,7 @@ SpinelNCPInstance::register_get_handler(const char *prop_name, unsigned int capa
 	ReplyUnpacker unpacker)
 {
 	register_get_handler(prop_name, capability,
-		boost::bind(&SpinelNCPInstance::prop_getter_unpacker, this, _1, prop_key, unpacker));
+		boost::bind(&SpinelNCPInstance::get_spinel_prop_with_unpacker, this, _1, prop_key, unpacker));
 }
 
 void
@@ -1848,30 +1849,40 @@ SpinelNCPInstance::regsiter_all_get_handlers(void)
 		SPINEL_PROP_CHANNEL_MANAGER_FAVORED_CHANNELS, unpack_channel_mask);
 
 
-	// Properties with specific handler methods
+	// Properties with dedicated handler methods
 
-#define REGISTER_GET_HANDLER(name)     \
-	register_get_handler(kWPANTUNDProperty_##name, boost::bind(&SpinelNCPInstance::get_prop_##name, this, _1))
+	register_get_handler(
+		kWPANTUNDProperty_ConfigNCPDriverName,
+		boost::bind(&SpinelNCPInstance::get_prop_ConfigNCPDriverName, this, _1));
+	register_get_handler(
+		kWPANTUNDProperty_NetworkIsCommissioned,
+		boost::bind(&SpinelNCPInstance::get_prop_NetworkIsCommissioned, this, _1));
+	register_get_handler(
+		kWPANTUNDProperty_ThreadRouterID,
+		boost::bind(&SpinelNCPInstance::get_prop_ThreadRouterID, this, _1));
+	register_get_handler(
+		kWPANTUNDProperty_ThreadConfigFilterRLOCAddresses,
+		boost::bind(&SpinelNCPInstance::get_prop_ThreadConfigFilterRLOCAddresses, this, _1));
+	register_get_handler(
+		kWPANTUNDProperty_IPv6MeshLocalPrefix,
+		boost::bind(&SpinelNCPInstance::get_prop_IPv6MeshLocalPrefix, this, _1));
+	register_get_handler(
+		kWPANTUNDProperty_IPv6MeshLocalAddress,
+		boost::bind(&SpinelNCPInstance::get_prop_IPv6MeshLocalAddress, this, _1));
+	register_get_handler(
+		kWPANTUNDProperty_IPv6LinkLocalAddress,
+		boost::bind(&SpinelNCPInstance::get_prop_IPv6LinkLocalAddress, this, _1));
 
-	REGISTER_GET_HANDLER(ConfigNCPDriverName);
-	REGISTER_GET_HANDLER(NetworkIsCommissioned);
-	REGISTER_GET_HANDLER(ThreadRouterID);
-	REGISTER_GET_HANDLER(ThreadConfigFilterRLOCAddresses);
-	REGISTER_GET_HANDLER(IPv6MeshLocalPrefix);
-	REGISTER_GET_HANDLER(IPv6MeshLocalAddress);
-	REGISTER_GET_HANDLER(IPv6LinkLocalAddress);
+	// Properties with dedicated handler methods and capability check.
 
-#undef REGISTER_GET_HANDLER
-
-#define REGISTER_GET_HANDLER_CAP(name, capability)                     \
-	register_get_handler(kWPANTUNDProperty_##name, capability,         \
-		boost::bind(&SpinelNCPInstance::get_prop_##name, this, _1))
-
-	REGISTER_GET_HANDLER_CAP(CommissionerEnergyScanResult, SPINEL_CAP_THREAD_COMMISSIONER);
-	REGISTER_GET_HANDLER_CAP(CommissionerPanIdConflictResult, SPINEL_CAP_THREAD_COMMISSIONER);
-
-#undef REGISTER_GET_HANDLER_CAP
-
+	register_get_handler(
+		kWPANTUNDProperty_CommissionerEnergyScanResult,
+		SPINEL_CAP_THREAD_COMMISSIONER,
+		boost::bind(&SpinelNCPInstance::get_prop_CommissionerEnergyScanResult, this, _1));
+	register_get_handler(
+		kWPANTUNDProperty_CommissionerPanIdConflictResult,
+		SPINEL_CAP_THREAD_COMMISSIONER,
+		boost::bind(&SpinelNCPInstance::get_prop_CommissionerPanIdConflictResult, this, _1));
 }
 
 void
@@ -1889,7 +1900,7 @@ SpinelNCPInstance::get_prop_NetworkIsCommissioned(CallbackWithStatusArg1 cb)
 void
 SpinelNCPInstance::get_prop_ThreadRouterID(CallbackWithStatusArg1 cb)
 {
-	prop_getter_simple(boost::bind(convert_rloc16_to_router_id, cb, _1, _2), SPINEL_PROP_THREAD_RLOC16,
+	get_spinel_prop(boost::bind(convert_rloc16_to_router_id, cb, _1, _2), SPINEL_PROP_THREAD_RLOC16,
 		SPINEL_DATATYPE_UINT16_S);
 }
 
@@ -1915,7 +1926,7 @@ void
 SpinelNCPInstance::get_prop_IPv6MeshLocalPrefix(CallbackWithStatusArg1 cb)
 {
 	if (!buffer_is_nonzero(mNCPV6Prefix, sizeof(mNCPV6Prefix))) {
-		prop_getter_simple(cb, SPINEL_PROP_IPV6_ML_PREFIX, SPINEL_DATATYPE_IPv6ADDR_S);
+		get_spinel_prop(cb, SPINEL_PROP_IPV6_ML_PREFIX, SPINEL_DATATYPE_IPv6ADDR_S);
 	} else {
 		struct in6_addr addr = mNCPMeshLocalAddress;
 		memset(addr.s6_addr + 8, 0, 8);
@@ -1927,7 +1938,7 @@ void
 SpinelNCPInstance::get_prop_IPv6MeshLocalAddress(CallbackWithStatusArg1 cb)
 {
 	if (!buffer_is_nonzero(mNCPV6Prefix, sizeof(mNCPV6Prefix))) {
-		prop_getter_simple(cb, SPINEL_PROP_IPV6_ML_ADDR, SPINEL_DATATYPE_IPv6ADDR_S);
+		get_spinel_prop(cb, SPINEL_PROP_IPV6_ML_ADDR, SPINEL_DATATYPE_IPv6ADDR_S);
 	} else {
 		cb(kWPANTUNDStatus_Ok, boost::any(in6_addr_to_string(mNCPMeshLocalAddress)));
 	}
@@ -1937,7 +1948,7 @@ void
 SpinelNCPInstance::get_prop_IPv6LinkLocalAddress(CallbackWithStatusArg1 cb)
 {
 	if (!IN6_IS_ADDR_LINKLOCAL(&mNCPLinkLocalAddress)) {
-		prop_getter_simple(cb, SPINEL_PROP_IPV6_LL_ADDR, SPINEL_DATATYPE_IPv6ADDR_S);
+		get_spinel_prop(cb, SPINEL_PROP_IPV6_LL_ADDR, SPINEL_DATATYPE_IPv6ADDR_S);
 	} else {
 		cb(kWPANTUNDStatus_Ok, boost::any(in6_addr_to_string(mNCPLinkLocalAddress)));
 	}

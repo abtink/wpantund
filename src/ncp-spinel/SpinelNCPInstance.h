@@ -194,10 +194,10 @@ public:
 private:
 	typedef SpinelNCPTaskSendCommand::ReplyUnpacker ReplyUnpacker;
 
-	void prop_getter_simple(CallbackWithStatusArg1 cb, spinel_prop_key_t prop_key, const std::string &reply_format);
-	void prop_getter_unpacker(CallbackWithStatusArg1 cb, spinel_prop_key_t prop_key, ReplyUnpacker unpacker);
+	void get_spinel_prop(CallbackWithStatusArg1 cb, spinel_prop_key_t prop_key, const std::string &reply_format);
+	void get_spinel_prop_with_unpacker(CallbackWithStatusArg1 cb, spinel_prop_key_t prop_key, ReplyUnpacker unpacker);
 
-	void prop_getter_check_capability(CallbackWithStatusArg1 cb, const std::string &prop_name, unsigned int capability,
+	void check_capability_prop_get(CallbackWithStatusArg1 cb, const std::string &prop_name, unsigned int capability,
 			PropGetHandler handler);
 
 	void register_get_handler(const char *prop_name, PropGetHandler handler);
