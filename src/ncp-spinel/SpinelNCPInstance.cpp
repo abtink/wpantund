@@ -42,8 +42,6 @@
 #include "spinel-extra.h"
 #include "IPv6Helpers.h"
 
-#define kWPANTUNDProperty_Spinel_CounterPrefix		"NCP:Counter:"
-
 #define kWPANTUND_Whitelist_RssiOverrideDisabled    127
 
 using namespace nl;
@@ -490,15 +488,15 @@ SpinelNCPInstance::get_supported_property_keys()const
 
 	if (mCapabilities.count(SPINEL_CAP_COUNTERS)) {
 		properties.insert(kWPANTUNDProperty_NCPCounterAllMac);
-		properties.insert(kWPANTUNDProperty_Spinel_CounterPrefix "TX_IP_SEC_TOTAL");
-		properties.insert(kWPANTUNDProperty_Spinel_CounterPrefix "TX_IP_INSEC_TOTAL");
-		properties.insert(kWPANTUNDProperty_Spinel_CounterPrefix "TX_IP_DROPPED");
-		properties.insert(kWPANTUNDProperty_Spinel_CounterPrefix "RX_IP_SEC_TOTAL");
-		properties.insert(kWPANTUNDProperty_Spinel_CounterPrefix "RX_IP_INSEC_TOTAL");
-		properties.insert(kWPANTUNDProperty_Spinel_CounterPrefix "RX_IP_DROPPED");
-		properties.insert(kWPANTUNDProperty_Spinel_CounterPrefix "TX_SPINEL_TOTAL");
-		properties.insert(kWPANTUNDProperty_Spinel_CounterPrefix "RX_SPINEL_TOTAL");
-		properties.insert(kWPANTUNDProperty_Spinel_CounterPrefix "RX_SPINEL_ERR");
+		properties.insert(kWPANTUNDProperty_NCPCounter_TX_IP_SEC_TOTAL);
+		properties.insert(kWPANTUNDProperty_NCPCounter_TX_IP_INSEC_TOTAL);
+		properties.insert(kWPANTUNDProperty_NCPCounter_TX_IP_DROPPED);
+		properties.insert(kWPANTUNDProperty_NCPCounter_RX_IP_SEC_TOTAL);
+		properties.insert(kWPANTUNDProperty_NCPCounter_RX_IP_INSEC_TOTAL);
+		properties.insert(kWPANTUNDProperty_NCPCounter_RX_IP_DROPPED);
+		properties.insert(kWPANTUNDProperty_NCPCounter_TX_SPINEL_TOTAL);
+		properties.insert(kWPANTUNDProperty_NCPCounter_RX_SPINEL_TOTAL);
+		properties.insert(kWPANTUNDProperty_NCPCounter_RX_SPINEL_ERR);
 	}
 
 	if (mCapabilities.count(SPINEL_CAP_MAC_WHITELIST)) {
@@ -1606,7 +1604,7 @@ SpinelNCPInstance::register_get_handler_capability_spinel_unpacker(const char *p
 void
 SpinelNCPInstance::regsiter_all_get_handlers(void)
 {
-	// Simple properties
+	// Properties associated with a spinel property with simple packing format
 
 	register_get_handler_spinel_simple(
 		kWPANTUNDProperty_NCPCCAThreshold,
@@ -1701,8 +1699,14 @@ SpinelNCPInstance::regsiter_all_get_handlers(void)
 	register_get_handler_spinel_simple(
 		kWPANTUNDProperty_NCPCCAFailureRate,
 		SPINEL_PROP_MAC_CCA_FAILURE_RATE, SPINEL_DATATYPE_UINT16_S);
+	register_get_handler_spinel_simple(
+		kWPANTUNDProperty_ThreadChildTimeout,
+		SPINEL_PROP_THREAD_CHILD_TIMEOUT, SPINEL_DATATYPE_UINT32_S);
+	register_get_handler_spinel_simple(
+		kWPANTUNDProperty_OpenThreadLogLevel,
+		SPINEL_PROP_DEBUG_NCP_LOG_LEVEL, SPINEL_DATATYPE_UINT8_S);
 
-	// Simple properties with capability check
+	// Properties requiring capability check and associated with a spinel spinel property with simple packing format
 
 	register_get_handler_capability_spinel_simple(
 		kWPANTUNDProperty_NCPSleepyPollInterval,
@@ -1796,26 +1800,226 @@ SpinelNCPInstance::regsiter_all_get_handlers(void)
 		kWPANTUNDProperty_ChannelManagerChannelSelect,
 		SPINEL_CAP_CHANNEL_MANAGER,
 		SPINEL_PROP_CHANNEL_MANAGER_CHANNEL_SELECT, SPINEL_DATATYPE_BOOL_S);
+	register_get_handler_capability_spinel_simple(
+		kWPANTUNDProperty_NestLabs_LegacyMeshLocalPrefix,
+		SPINEL_CAP_NEST_LEGACY_INTERFACE,
+		SPINEL_PROP_NEST_LEGACY_ULA_PREFIX, SPINEL_DATATYPE_DATA_S);
+	register_get_handler_capability_spinel_simple(
+		kWPANTUNDProperty_TimeSync_Period,
+		SPINEL_CAP_TIME_SYNC,
+		SPINEL_PROP_TIME_SYNC_PERIOD, SPINEL_DATATYPE_UINT16_S);
+	register_get_handler_capability_spinel_simple(
+		kWPANTUNDProperty_TimeSync_Xtal_Threshold,
+		SPINEL_CAP_TIME_SYNC,
+		SPINEL_PROP_TIME_SYNC_XTAL_THRESHOLD, SPINEL_DATATYPE_UINT16_S);
+	register_get_handler_capability_spinel_simple(
+		kWPANTUNDProperty_NCPCounter_TX_PKT_TOTAL,
+		SPINEL_CAP_COUNTERS,
+		SPINEL_PROP_CNTR_TX_PKT_TOTAL, SPINEL_DATATYPE_UINT32_S);
+	register_get_handler_capability_spinel_simple(
+		kWPANTUNDProperty_NCPCounter_TX_PKT_UNICAST,
+		SPINEL_CAP_COUNTERS,
+		SPINEL_PROP_CNTR_TX_PKT_UNICAST, SPINEL_DATATYPE_UINT32_S);
+	register_get_handler_capability_spinel_simple(
+		kWPANTUNDProperty_NCPCounter_TX_PKT_BROADCAST,
+		SPINEL_CAP_COUNTERS,
+		SPINEL_PROP_CNTR_TX_PKT_BROADCAST, SPINEL_DATATYPE_UINT32_S);
+	register_get_handler_capability_spinel_simple(
+		kWPANTUNDProperty_NCPCounter_TX_PKT_ACK_REQ,
+		SPINEL_CAP_COUNTERS,
+		SPINEL_PROP_CNTR_TX_PKT_ACK_REQ, SPINEL_DATATYPE_UINT32_S);
+	register_get_handler_capability_spinel_simple(
+		kWPANTUNDProperty_NCPCounter_TX_PKT_ACKED,
+		SPINEL_CAP_COUNTERS,
+		SPINEL_PROP_CNTR_TX_PKT_ACKED, SPINEL_DATATYPE_UINT32_S);
+	register_get_handler_capability_spinel_simple(
+		kWPANTUNDProperty_NCPCounter_TX_PKT_NO_ACK_REQ,
+		SPINEL_CAP_COUNTERS,
+		SPINEL_PROP_CNTR_TX_PKT_NO_ACK_REQ, SPINEL_DATATYPE_UINT32_S);
+	register_get_handler_capability_spinel_simple(
+		kWPANTUNDProperty_NCPCounter_TX_PKT_DATA,
+		SPINEL_CAP_COUNTERS,
+		SPINEL_PROP_CNTR_TX_PKT_DATA, SPINEL_DATATYPE_UINT32_S);
+	register_get_handler_capability_spinel_simple(
+		kWPANTUNDProperty_NCPCounter_TX_PKT_DATA_POLL,
+		SPINEL_CAP_COUNTERS,
+		SPINEL_PROP_CNTR_TX_PKT_DATA_POLL, SPINEL_DATATYPE_UINT32_S);
+	register_get_handler_capability_spinel_simple(
+		kWPANTUNDProperty_NCPCounter_TX_PKT_BEACON,
+		SPINEL_CAP_COUNTERS,
+		SPINEL_PROP_CNTR_TX_PKT_BEACON, SPINEL_DATATYPE_UINT32_S);
+	register_get_handler_capability_spinel_simple(
+		kWPANTUNDProperty_NCPCounter_TX_PKT_BEACON_REQ,
+		SPINEL_CAP_COUNTERS,
+		SPINEL_PROP_CNTR_TX_PKT_BEACON_REQ, SPINEL_DATATYPE_UINT32_S);
+	register_get_handler_capability_spinel_simple(
+		kWPANTUNDProperty_NCPCounter_TX_PKT_OTHER,
+		SPINEL_CAP_COUNTERS,
+		SPINEL_PROP_CNTR_TX_PKT_OTHER, SPINEL_DATATYPE_UINT32_S);
+	register_get_handler_capability_spinel_simple(
+		kWPANTUNDProperty_NCPCounter_TX_PKT_RETRY,
+		SPINEL_CAP_COUNTERS,
+		SPINEL_PROP_CNTR_TX_PKT_RETRY, SPINEL_DATATYPE_UINT32_S);
+	register_get_handler_capability_spinel_simple(
+		kWPANTUNDProperty_NCPCounter_TX_ERR_CCA,
+		SPINEL_CAP_COUNTERS,
+		SPINEL_PROP_CNTR_TX_ERR_CCA, SPINEL_DATATYPE_UINT32_S);
+	register_get_handler_capability_spinel_simple(
+		kWPANTUNDProperty_NCPCounter_TX_ERR_ABORT,
+		SPINEL_CAP_COUNTERS,
+		SPINEL_PROP_CNTR_TX_ERR_ABORT, SPINEL_DATATYPE_UINT32_S);
+	register_get_handler_capability_spinel_simple(
+		kWPANTUNDProperty_NCPCounter_RX_PKT_TOTAL,
+		SPINEL_CAP_COUNTERS,
+		SPINEL_PROP_CNTR_RX_PKT_TOTAL, SPINEL_DATATYPE_UINT32_S);
+	register_get_handler_capability_spinel_simple(
+		kWPANTUNDProperty_NCPCounter_RX_PKT_UNICAST,
+		SPINEL_CAP_COUNTERS,
+		SPINEL_PROP_CNTR_RX_PKT_UNICAST, SPINEL_DATATYPE_UINT32_S);
+	register_get_handler_capability_spinel_simple(
+		kWPANTUNDProperty_NCPCounter_RX_PKT_BROADCAST,
+		SPINEL_CAP_COUNTERS,
+		SPINEL_PROP_CNTR_RX_PKT_BROADCAST, SPINEL_DATATYPE_UINT32_S);
+	register_get_handler_capability_spinel_simple(
+		kWPANTUNDProperty_NCPCounter_RX_PKT_DATA,
+		SPINEL_CAP_COUNTERS,
+		SPINEL_PROP_CNTR_RX_PKT_DATA, SPINEL_DATATYPE_UINT32_S);
+	register_get_handler_capability_spinel_simple(
+		kWPANTUNDProperty_NCPCounter_RX_PKT_DATA_POLL,
+		SPINEL_CAP_COUNTERS,
+		SPINEL_PROP_CNTR_RX_PKT_DATA_POLL, SPINEL_DATATYPE_UINT32_S);
+	register_get_handler_capability_spinel_simple(
+		kWPANTUNDProperty_NCPCounter_RX_PKT_BEACON,
+		SPINEL_CAP_COUNTERS,
+		SPINEL_PROP_CNTR_RX_PKT_BEACON, SPINEL_DATATYPE_UINT32_S);
+	register_get_handler_capability_spinel_simple(
+		kWPANTUNDProperty_NCPCounter_RX_PKT_BEACON_REQ,
+		SPINEL_CAP_COUNTERS,
+		SPINEL_PROP_CNTR_RX_PKT_BEACON_REQ, SPINEL_DATATYPE_UINT32_S);
+	register_get_handler_capability_spinel_simple(
+		kWPANTUNDProperty_NCPCounter_RX_PKT_OTHER,
+		SPINEL_CAP_COUNTERS,
+		SPINEL_PROP_CNTR_RX_PKT_OTHER, SPINEL_DATATYPE_UINT32_S);
+	register_get_handler_capability_spinel_simple(
+		kWPANTUNDProperty_NCPCounter_RX_PKT_FILT_WL,
+		SPINEL_CAP_COUNTERS,
+		SPINEL_PROP_CNTR_RX_PKT_FILT_WL, SPINEL_DATATYPE_UINT32_S);
+	register_get_handler_capability_spinel_simple(
+		kWPANTUNDProperty_NCPCounter_RX_PKT_FILT_DA,
+		SPINEL_CAP_COUNTERS,
+		SPINEL_PROP_CNTR_RX_PKT_FILT_DA, SPINEL_DATATYPE_UINT32_S);
+	register_get_handler_capability_spinel_simple(
+		kWPANTUNDProperty_NCPCounter_RX_ERR_EMPTY,
+		SPINEL_CAP_COUNTERS,
+		SPINEL_PROP_CNTR_RX_ERR_EMPTY, SPINEL_DATATYPE_UINT32_S);
+	register_get_handler_capability_spinel_simple(
+		kWPANTUNDProperty_NCPCounter_RX_ERR_UKWN_NBR,
+		SPINEL_CAP_COUNTERS,
+		SPINEL_PROP_CNTR_RX_ERR_UKWN_NBR, SPINEL_DATATYPE_UINT32_S);
+	register_get_handler_capability_spinel_simple(
+		kWPANTUNDProperty_NCPCounter_RX_ERR_NVLD_SADDR,
+		SPINEL_CAP_COUNTERS,
+		SPINEL_PROP_CNTR_RX_ERR_NVLD_SADDR, SPINEL_DATATYPE_UINT32_S);
+	register_get_handler_capability_spinel_simple(
+		kWPANTUNDProperty_NCPCounter_RX_ERR_SECURITY,
+		SPINEL_CAP_COUNTERS,
+		SPINEL_PROP_CNTR_RX_ERR_SECURITY, SPINEL_DATATYPE_UINT32_S);
+	register_get_handler_capability_spinel_simple(
+		kWPANTUNDProperty_NCPCounter_RX_ERR_BAD_FCS,
+		SPINEL_CAP_COUNTERS,
+		SPINEL_PROP_CNTR_RX_ERR_BAD_FCS, SPINEL_DATATYPE_UINT32_S);
+	register_get_handler_capability_spinel_simple(
+		kWPANTUNDProperty_NCPCounter_RX_ERR_OTHER,
+		SPINEL_CAP_COUNTERS,
+		SPINEL_PROP_CNTR_RX_ERR_OTHER, SPINEL_DATATYPE_UINT32_S);
+	register_get_handler_capability_spinel_simple(
+		kWPANTUNDProperty_NCPCounter_TX_IP_SEC_TOTAL,
+		SPINEL_CAP_COUNTERS,
+		SPINEL_PROP_CNTR_TX_IP_SEC_TOTAL, SPINEL_DATATYPE_UINT32_S);
+	register_get_handler_capability_spinel_simple(
+		kWPANTUNDProperty_NCPCounter_TX_IP_INSEC_TOTAL,
+		SPINEL_CAP_COUNTERS,
+		SPINEL_PROP_CNTR_TX_IP_INSEC_TOTAL, SPINEL_DATATYPE_UINT32_S);
+	register_get_handler_capability_spinel_simple(
+		kWPANTUNDProperty_NCPCounter_TX_IP_DROPPED,
+		SPINEL_CAP_COUNTERS,
+		SPINEL_PROP_CNTR_TX_IP_DROPPED, SPINEL_DATATYPE_UINT32_S);
+	register_get_handler_capability_spinel_simple(
+		kWPANTUNDProperty_NCPCounter_RX_IP_SEC_TOTAL,
+		SPINEL_CAP_COUNTERS,
+		SPINEL_PROP_CNTR_RX_IP_SEC_TOTAL, SPINEL_DATATYPE_UINT32_S);
+	register_get_handler_capability_spinel_simple(
+		kWPANTUNDProperty_NCPCounter_RX_IP_INSEC_TOTAL,
+		SPINEL_CAP_COUNTERS,
+		SPINEL_PROP_CNTR_RX_IP_INSEC_TOTAL, SPINEL_DATATYPE_UINT32_S);
+	register_get_handler_capability_spinel_simple(
+		kWPANTUNDProperty_NCPCounter_RX_IP_DROPPED,
+		SPINEL_CAP_COUNTERS,
+		SPINEL_PROP_CNTR_RX_IP_DROPPED, SPINEL_DATATYPE_UINT32_S);
+	register_get_handler_capability_spinel_simple(
+		kWPANTUNDProperty_NCPCounter_TX_SPINEL_TOTAL,
+		SPINEL_CAP_COUNTERS,
+		SPINEL_PROP_CNTR_TX_SPINEL_TOTAL, SPINEL_DATATYPE_UINT32_S);
+	register_get_handler_capability_spinel_simple(
+		kWPANTUNDProperty_NCPCounter_RX_SPINEL_TOTAL,
+		SPINEL_CAP_COUNTERS,
+		SPINEL_PROP_CNTR_RX_SPINEL_TOTAL, SPINEL_DATATYPE_UINT32_S);
+	register_get_handler_capability_spinel_simple(
+		kWPANTUNDProperty_NCPCounter_RX_SPINEL_ERR,
+		SPINEL_CAP_COUNTERS,
+		SPINEL_PROP_CNTR_RX_SPINEL_ERR, SPINEL_DATATYPE_UINT32_S);
+	register_get_handler_capability_spinel_simple(
+		kWPANTUNDProperty_NCPCounter_IP_TX_SUCCESS,
+		SPINEL_CAP_COUNTERS,
+		SPINEL_PROP_CNTR_IP_TX_SUCCESS, SPINEL_DATATYPE_UINT32_S);
+	register_get_handler_capability_spinel_simple(
+		kWPANTUNDProperty_NCPCounter_IP_RX_SUCCESS,
+		SPINEL_CAP_COUNTERS,
+		SPINEL_PROP_CNTR_IP_RX_SUCCESS, SPINEL_DATATYPE_UINT32_S);
+	register_get_handler_capability_spinel_simple(
+		kWPANTUNDProperty_NCPCounter_IP_TX_FAILURE,
+		SPINEL_CAP_COUNTERS,
+		SPINEL_PROP_CNTR_IP_TX_FAILURE, SPINEL_DATATYPE_UINT32_S);
+	register_get_handler_capability_spinel_simple(
+		kWPANTUNDProperty_NCPCounter_IP_RX_FAILURE,
+		SPINEL_CAP_COUNTERS,
+		SPINEL_PROP_CNTR_IP_RX_FAILURE, SPINEL_DATATYPE_UINT32_S);
 
-	// Properties with unpacker
+	// Properties associated with a spinel property using an unpacker
 
 	register_get_handler_spinel_unpacker(
 		kWPANTUNDProperty_NCPChannelMask,
 		SPINEL_PROP_PHY_CHAN_SUPPORTED, unpack_channel_mask);
 	register_get_handler_spinel_unpacker(
 		kWPANTUNDProperty_ThreadActiveDataset,
-		SPINEL_PROP_THREAD_ACTIVE_DATASET, boost::bind(unpack_dataset, _1, _2, _3, false));
+		SPINEL_PROP_THREAD_ACTIVE_DATASET, boost::bind(unpack_dataset, _1, _2, _3, /* as_val_map */ false));
 	register_get_handler_spinel_unpacker(
 		kWPANTUNDProperty_ThreadActiveDatasetAsValMap,
-		SPINEL_PROP_THREAD_ACTIVE_DATASET, boost::bind(unpack_dataset, _1, _2, _3, true));
+		SPINEL_PROP_THREAD_ACTIVE_DATASET, boost::bind(unpack_dataset, _1, _2, _3, /* as_val_map */ true));
 	register_get_handler_spinel_unpacker(
 		kWPANTUNDProperty_ThreadPendingDataset,
-		SPINEL_PROP_THREAD_PENDING_DATASET, boost::bind(unpack_dataset, _1, _2, _3, false));
+		SPINEL_PROP_THREAD_PENDING_DATASET, boost::bind(unpack_dataset, _1, _2, _3, /* as_val_map */ false));
 	register_get_handler_spinel_unpacker(
 		kWPANTUNDProperty_ThreadPendingDatasetAsValMap,
-		SPINEL_PROP_THREAD_PENDING_DATASET, boost::bind(unpack_dataset, _1, _2, _3, true));
+		SPINEL_PROP_THREAD_PENDING_DATASET, boost::bind(unpack_dataset, _1, _2, _3, /* as_val_map */ true));
+	register_get_handler_spinel_unpacker(
+		kWPANTUNDProperty_ThreadParent,
+		SPINEL_PROP_THREAD_PARENT,
+		boost::bind(unpack_parent_info, _1, _2, _3, /* as_val_map */ false));
+	register_get_handler_spinel_unpacker(
+		kWPANTUNDProperty_ThreadParentAsValMap,
+		SPINEL_PROP_THREAD_PARENT,
+		boost::bind(unpack_parent_info, _1, _2, _3, /* as_val_map */ true));
+	register_get_handler_spinel_unpacker(
+		kWPANTUNDProperty_ThreadAddressCacheTable,
+		SPINEL_PROP_THREAD_ADDRESS_CACHE_TABLE,
+		boost::bind(unpack_address_cache_table, _1, _2, _3, /* as_val_map */ false));
+	register_get_handler_spinel_unpacker(
+		kWPANTUNDProperty_ThreadAddressCacheTableAsValMap,
+		SPINEL_PROP_THREAD_ADDRESS_CACHE_TABLE,
+		boost::bind(unpack_address_cache_table, _1, _2, _3, /* as_val_map */ true));
 
-	// Properties with unpacker and capability check
+	// Properties requiring capability check associated with a spinel property using an unpacker
 
 	register_get_handler_capability_spinel_unpacker(
 		kWPANTUNDProperty_NCPMCUPowerState,
@@ -1857,9 +2061,24 @@ SpinelNCPInstance::regsiter_all_get_handlers(void)
 		kWPANTUNDProperty_ChannelManagerFavoredChannelMask,
 		SPINEL_CAP_CHANNEL_MANAGER,
 		SPINEL_PROP_CHANNEL_MANAGER_FAVORED_CHANNELS, unpack_channel_mask);
+	register_get_handler_capability_spinel_unpacker(
+		kWPANTUNDProperty_NCPCounterAllMac,
+		SPINEL_CAP_COUNTERS,
+		SPINEL_PROP_CNTR_ALL_MAC_COUNTERS, boost::bind(unpack_ncp_counters_all_mac, _1, _2, _3, false));
+	register_get_handler_capability_spinel_unpacker(
+		kWPANTUNDProperty_NCPCounterAllMacAsValMap,
+		SPINEL_CAP_COUNTERS,
+		SPINEL_PROP_CNTR_ALL_MAC_COUNTERS, boost::bind(unpack_ncp_counters_all_mac, _1, _2, _3, true));
+	register_get_handler_capability_spinel_unpacker(
+		kWPANTUNDProperty_TimeSync_NetworkTime,
+		SPINEL_CAP_TIME_SYNC,
+		SPINEL_PROP_THREAD_NETWORK_TIME, boost::bind(unpack_thread_network_time, _1, _2, _3, false));
+	register_get_handler_capability_spinel_unpacker(
+		kWPANTUNDProperty_TimeSync_NetworkTimeAsValMap,
+		SPINEL_CAP_TIME_SYNC,
+		SPINEL_PROP_THREAD_NETWORK_TIME, boost::bind(unpack_thread_network_time, _1, _2, _3, true));
 
-
-	// Properties with dedicated handler methods
+	// Properties with a dedicated handler method
 
 	register_get_handler(
 		kWPANTUNDProperty_ConfigNCPDriverName,
@@ -1882,8 +2101,101 @@ SpinelNCPInstance::regsiter_all_get_handlers(void)
 	register_get_handler(
 		kWPANTUNDProperty_IPv6LinkLocalAddress,
 		boost::bind(&SpinelNCPInstance::get_prop_IPv6LinkLocalAddress, this, _1));
+	register_get_handler(
+		kWPANTUNDProperty_ThreadChildTable,
+		boost::bind(&SpinelNCPInstance::get_prop_ThreadChildTable, this, _1));
+	register_get_handler(
+		kWPANTUNDProperty_ThreadChildTableAsValMap,
+		boost::bind(&SpinelNCPInstance::get_prop_ThreadChildTableAsValMap, this, _1));
+	register_get_handler(
+		kWPANTUNDProperty_ThreadChildTableAddresses,
+		boost::bind(&SpinelNCPInstance::get_prop_ThreadChildTableAddresses, this, _1));
+	register_get_handler(
+		kWPANTUNDProperty_ThreadNeighborTable,
+		boost::bind(&SpinelNCPInstance::get_prop_ThreadNeighborTable, this, _1));
+	register_get_handler(
+		kWPANTUNDProperty_ThreadNeighborTableAsValMap,
+		boost::bind(&SpinelNCPInstance::get_prop_ThreadNeighborTableAsValMap, this, _1));
+	register_get_handler(
+		kWPANTUNDProperty_ThreadRouterTable,
+		boost::bind(&SpinelNCPInstance::get_prop_ThreadRouterTable, this, _1));
+	register_get_handler(
+		kWPANTUNDProperty_ThreadRouterTableAsValMap,
+		boost::bind(&SpinelNCPInstance::get_prop_ThreadRouterTableAsValMap, this, _1));
+	register_get_handler(
+		kWPANTUNDProperty_OpenThreadMsgBufferCounters,
+		boost::bind(&SpinelNCPInstance::get_prop_OpenThreadMsgBufferCounters, this, _1));
+	register_get_handler(
+		kWPANTUNDProperty_OpenThreadMsgBufferCountersAsString,
+		boost::bind(&SpinelNCPInstance::get_prop_OpenThreadMsgBufferCountersAsString, this, _1));
+	register_get_handler(
+		kWPANTUNDProperty_OpenThreadSteeringDataSetWhenJoinable,
+		boost::bind(&SpinelNCPInstance::get_prop_OpenThreadSteeringDataSetWhenJoinable, this, _1));
+	register_get_handler(
+		kWPANTUNDProperty_OpenThreadSteeringDataAddress,
+		boost::bind(&SpinelNCPInstance::get_prop_OpenThreadSteeringDataAddress, this, _1));
+	register_get_handler(
+		kWPANTUNDProperty_DatasetActiveTimestamp,
+		boost::bind(&SpinelNCPInstance::get_prop_DatasetActiveTimestamp, this, _1));
+	register_get_handler(
+		kWPANTUNDProperty_DatasetPendingTimestamp,
+		boost::bind(&SpinelNCPInstance::get_prop_DatasetPendingTimestamp, this, _1));
+	register_get_handler(
+		kWPANTUNDProperty_DatasetMasterKey,
+		boost::bind(&SpinelNCPInstance::get_prop_DatasetMasterKey, this, _1));
+	register_get_handler(
+		kWPANTUNDProperty_DatasetNetworkName,
+		boost::bind(&SpinelNCPInstance::get_prop_DatasetNetworkName, this, _1));
+	register_get_handler(
+		kWPANTUNDProperty_DatasetExtendedPanId,
+		boost::bind(&SpinelNCPInstance::get_prop_DatasetExtendedPanId, this, _1));
+	register_get_handler(
+		kWPANTUNDProperty_DatasetMeshLocalPrefix,
+		boost::bind(&SpinelNCPInstance::get_prop_DatasetMeshLocalPrefix, this, _1));
+	register_get_handler(
+		kWPANTUNDProperty_DatasetDelay,
+		boost::bind(&SpinelNCPInstance::get_prop_DatasetDelay, this, _1));
+	register_get_handler(
+		kWPANTUNDProperty_DatasetPanId,
+		boost::bind(&SpinelNCPInstance::get_prop_DatasetPanId, this, _1));
+	register_get_handler(
+		kWPANTUNDProperty_DatasetChannel,
+		boost::bind(&SpinelNCPInstance::get_prop_DatasetChannel, this, _1));
+	register_get_handler(
+		kWPANTUNDProperty_DatasetPSKc,
+		boost::bind(&SpinelNCPInstance::get_prop_DatasetPSKc, this, _1));
+	register_get_handler(
+		kWPANTUNDProperty_DatasetChannelMaskPage0,
+		boost::bind(&SpinelNCPInstance::get_prop_DatasetChannelMaskPage0, this, _1));
+	register_get_handler(
+		kWPANTUNDProperty_DatasetSecPolicyKeyRotation,
+		boost::bind(&SpinelNCPInstance::get_prop_DatasetSecPolicyKeyRotation, this, _1));
+	register_get_handler(
+		kWPANTUNDProperty_DatasetSecPolicyFlags,
+		boost::bind(&SpinelNCPInstance::get_prop_DatasetSecPolicyFlags, this, _1));
+	register_get_handler(
+		kWPANTUNDProperty_DatasetRawTlvs,
+		boost::bind(&SpinelNCPInstance::get_prop_DatasetRawTlvs, this, _1));
+	register_get_handler(
+		kWPANTUNDProperty_DatasetDestIpAddress,
+		boost::bind(&SpinelNCPInstance::get_prop_DatasetDestIpAddress, this, _1));
+	register_get_handler(
+		kWPANTUNDProperty_DatasetAllFileds,
+		boost::bind(&SpinelNCPInstance::get_prop_DatasetAllFileds, this, _1));
+	register_get_handler(
+		kWPANTUNDProperty_DatasetAllFileds_AltString,
+		boost::bind(&SpinelNCPInstance::get_prop_DatasetAllFileds, this, _1));
+	register_get_handler(
+		kWPANTUNDProperty_DatasetAllFiledsAsValMap,
+		boost::bind(&SpinelNCPInstance::get_prop_DatasetAllFiledsAsValMap, this, _1));
+	register_get_handler(
+		kWPANTUNDProperty_DatasetCommand,
+		boost::bind(&SpinelNCPInstance::get_prop_DatasetCommand, this, _1));
+	register_get_handler(
+		kWPANTUNDProperty_DaemonTickleOnHostDidWake,
+		boost::bind(&SpinelNCPInstance::get_prop_DaemonTickleOnHostDidWake, this, _1));
 
-	// Properties with dedicated handler methods and capability check.
+	// Properties requiring capability check with a dedicated handler method
 
 	register_get_handler_capability(
 		kWPANTUNDProperty_CommissionerEnergyScanResult,
@@ -1893,6 +2205,14 @@ SpinelNCPInstance::regsiter_all_get_handlers(void)
 		kWPANTUNDProperty_CommissionerPanIdConflictResult,
 		SPINEL_CAP_THREAD_COMMISSIONER,
 		boost::bind(&SpinelNCPInstance::get_prop_CommissionerPanIdConflictResult, this, _1));
+	register_get_handler_capability(
+		kWPANTUNDProperty_ThreadNeighborTableErrorRates,
+		SPINEL_CAP_ERROR_RATE_TRACKING,
+		boost::bind(&SpinelNCPInstance::get_prop_ThreadNeighborTableErrorRates, this, _1));
+	register_get_handler_capability(
+		kWPANTUNDProperty_ThreadNeighborTableErrorRatesAsValMap,
+		SPINEL_CAP_ERROR_RATE_TRACKING,
+		boost::bind(&SpinelNCPInstance::get_prop_ThreadNeighborTableErrorRatesAsValMap, this, _1));
 }
 
 void
@@ -1964,9 +2284,339 @@ SpinelNCPInstance::get_prop_IPv6LinkLocalAddress(CallbackWithStatusArg1 cb)
 	}
 }
 
+void
+SpinelNCPInstance::get_prop_ThreadChildTable(CallbackWithStatusArg1 cb)
+{
+	start_new_task(boost::shared_ptr<SpinelNCPTask>(
+		new SpinelNCPTaskGetNetworkTopology(
+			this,
+			cb,
+			SpinelNCPTaskGetNetworkTopology::kChildTable,
+			SpinelNCPTaskGetNetworkTopology::kResultFormat_StringArray
+		)
+	));
+}
 
-//~~~~~~~~~~~~~~0000000000000000~~~~~~~~~~~~~~~---------------------~~~~~~~~~~~~~~~~~~~====================~~~~~~~~~~~~
-//~~~~~~~~~~~~~~0000000000000000~~~~~~~~~~~~~~~---------------------~~~~~~~~~~~~~~~~~~~====================~~~~~~~~~~~~
+void
+SpinelNCPInstance::get_prop_ThreadChildTableAsValMap(CallbackWithStatusArg1 cb)
+{
+	start_new_task(boost::shared_ptr<SpinelNCPTask>(
+		new SpinelNCPTaskGetNetworkTopology(
+			this,
+			cb,
+			SpinelNCPTaskGetNetworkTopology::kChildTable,
+			SpinelNCPTaskGetNetworkTopology::kResultFormat_ValueMapArray
+		)
+	));
+}
+
+void
+SpinelNCPInstance::get_prop_ThreadChildTableAddresses(CallbackWithStatusArg1 cb)
+{
+	start_new_task(boost::shared_ptr<SpinelNCPTask>(
+		new SpinelNCPTaskGetNetworkTopology(
+			this,
+			cb,
+			SpinelNCPTaskGetNetworkTopology::kChildTableAddresses,
+			SpinelNCPTaskGetNetworkTopology::kResultFormat_StringArray
+		)
+	));
+}
+
+
+void
+SpinelNCPInstance::get_prop_ThreadNeighborTable(CallbackWithStatusArg1 cb)
+{
+	start_new_task(boost::shared_ptr<SpinelNCPTask>(
+		new SpinelNCPTaskGetNetworkTopology(
+			this,
+			cb,
+			SpinelNCPTaskGetNetworkTopology::kNeighborTable,
+			SpinelNCPTaskGetNetworkTopology::kResultFormat_StringArray
+		)
+	));
+}
+
+void
+SpinelNCPInstance::get_prop_ThreadNeighborTableAsValMap(CallbackWithStatusArg1 cb)
+{
+	start_new_task(boost::shared_ptr<SpinelNCPTask>(
+		new SpinelNCPTaskGetNetworkTopology(
+			this,
+			cb,
+			SpinelNCPTaskGetNetworkTopology::kNeighborTable,
+			SpinelNCPTaskGetNetworkTopology::kResultFormat_ValueMapArray
+		)
+	));
+}
+
+void
+SpinelNCPInstance::get_prop_ThreadNeighborTableErrorRates(CallbackWithStatusArg1 cb)
+{
+	start_new_task(boost::shared_ptr<SpinelNCPTask>(
+		new SpinelNCPTaskGetNetworkTopology(
+			this,
+			cb,
+			SpinelNCPTaskGetNetworkTopology::kNeighborTableErrorRates,
+				SpinelNCPTaskGetNetworkTopology::kResultFormat_StringArray
+		)
+	));
+}
+
+void
+SpinelNCPInstance::get_prop_ThreadNeighborTableErrorRatesAsValMap(CallbackWithStatusArg1 cb)
+{
+	start_new_task(boost::shared_ptr<SpinelNCPTask>(
+		new SpinelNCPTaskGetNetworkTopology(
+			this,
+			cb,
+			SpinelNCPTaskGetNetworkTopology::kNeighborTableErrorRates,
+				SpinelNCPTaskGetNetworkTopology::kResultFormat_ValueMapArray
+		)
+	));
+}
+
+void
+SpinelNCPInstance::get_prop_ThreadRouterTable(CallbackWithStatusArg1 cb)
+{
+	start_new_task(boost::shared_ptr<SpinelNCPTask>(
+		new SpinelNCPTaskGetNetworkTopology(
+			this,
+			cb,
+			SpinelNCPTaskGetNetworkTopology::kRouterTable,
+			SpinelNCPTaskGetNetworkTopology::kResultFormat_StringArray
+		)
+	));
+}
+
+void
+SpinelNCPInstance::get_prop_ThreadRouterTableAsValMap(CallbackWithStatusArg1 cb)
+{
+	start_new_task(boost::shared_ptr<SpinelNCPTask>(
+		new SpinelNCPTaskGetNetworkTopology(
+			this,
+			cb,
+			SpinelNCPTaskGetNetworkTopology::kRouterTable,
+			SpinelNCPTaskGetNetworkTopology::kResultFormat_ValueMapArray
+		)
+	));
+}
+
+void
+SpinelNCPInstance::get_prop_OpenThreadMsgBufferCounters(CallbackWithStatusArg1 cb)
+{
+	start_new_task(boost::shared_ptr<SpinelNCPTask>(
+		new SpinelNCPTaskGetMsgBufferCounters(
+			this,
+			cb,
+			SpinelNCPTaskGetMsgBufferCounters::kResultFormat_StringArray
+		)
+	));
+}
+
+void
+SpinelNCPInstance::get_prop_OpenThreadMsgBufferCountersAsString(CallbackWithStatusArg1 cb)
+{
+	start_new_task(boost::shared_ptr<SpinelNCPTask>(
+		new SpinelNCPTaskGetMsgBufferCounters(
+			this,
+			cb,
+			SpinelNCPTaskGetMsgBufferCounters::kResultFormat_String
+		)
+	));
+}
+
+void
+SpinelNCPInstance::get_prop_OpenThreadSteeringDataSetWhenJoinable(CallbackWithStatusArg1 cb)
+{
+	cb(0, boost::any(mSetSteeringDataWhenJoinable));
+}
+
+void
+SpinelNCPInstance::get_prop_OpenThreadSteeringDataAddress(CallbackWithStatusArg1 cb)
+{
+	cb(0, boost::any(nl::Data(mSteeringDataAddress, sizeof(mSteeringDataAddress))));
+}
+
+void
+SpinelNCPInstance::get_prop_DatasetActiveTimestamp(CallbackWithStatusArg1 cb)
+{
+	if (mLocalDataset.mActiveTimestamp.has_value()) {
+		cb(kWPANTUNDStatus_Ok, boost::any(mLocalDataset.mActiveTimestamp.get()));
+	} else {
+		cb(kWPANTUNDStatus_Ok, boost::any(Data()));
+	}
+}
+
+void
+SpinelNCPInstance::get_prop_DatasetPendingTimestamp(CallbackWithStatusArg1 cb)
+{
+	if (mLocalDataset.mPendingTimestamp.has_value()) {
+		cb(kWPANTUNDStatus_Ok, boost::any(mLocalDataset.mPendingTimestamp.get()));
+	} else {
+		cb(kWPANTUNDStatus_Ok, boost::any(Data()));
+	}
+}
+
+void
+SpinelNCPInstance::get_prop_DatasetMasterKey(CallbackWithStatusArg1 cb)
+{
+	if (mLocalDataset.mMasterKey.has_value()) {
+		cb(kWPANTUNDStatus_Ok, boost::any(mLocalDataset.mMasterKey.get()));
+	} else {
+		cb(kWPANTUNDStatus_Ok, boost::any(Data()));
+	}
+}
+
+void
+SpinelNCPInstance::get_prop_DatasetNetworkName(CallbackWithStatusArg1 cb)
+{
+	if (mLocalDataset.mNetworkName.has_value()) {
+		cb(kWPANTUNDStatus_Ok, boost::any(mLocalDataset.mNetworkName.get()));
+	} else {
+		cb(kWPANTUNDStatus_Ok, boost::any(Data()));
+	}
+}
+
+void
+SpinelNCPInstance::get_prop_DatasetExtendedPanId(CallbackWithStatusArg1 cb)
+{
+	if (mLocalDataset.mExtendedPanId.has_value()) {
+		cb(kWPANTUNDStatus_Ok, boost::any(mLocalDataset.mExtendedPanId.get()));
+	} else {
+		cb(kWPANTUNDStatus_Ok, boost::any(Data()));
+	}
+}
+
+void
+SpinelNCPInstance::get_prop_DatasetMeshLocalPrefix(CallbackWithStatusArg1 cb)
+{
+	if (mLocalDataset.mMeshLocalPrefix.has_value()) {
+		cb(kWPANTUNDStatus_Ok, boost::any(in6_addr_to_string(mLocalDataset.mMeshLocalPrefix.get())));
+	} else {
+		cb(kWPANTUNDStatus_Ok, boost::any(Data()));
+	}
+}
+
+void
+SpinelNCPInstance::get_prop_DatasetDelay(CallbackWithStatusArg1 cb)
+{
+	if (mLocalDataset.mDelay.has_value()) {
+		cb(kWPANTUNDStatus_Ok, boost::any(mLocalDataset.mDelay.get()));
+	} else {
+		cb(kWPANTUNDStatus_Ok, boost::any(Data()));
+	}
+}
+
+void
+SpinelNCPInstance::get_prop_DatasetPanId(CallbackWithStatusArg1 cb)
+{
+	if (mLocalDataset.mPanId.has_value()) {
+		cb(kWPANTUNDStatus_Ok, boost::any(mLocalDataset.mPanId.get()));
+	} else {
+		cb(kWPANTUNDStatus_Ok, boost::any(Data()));
+	}
+}
+
+void
+SpinelNCPInstance::get_prop_DatasetChannel(CallbackWithStatusArg1 cb)
+{
+	if (mLocalDataset.mChannel.has_value()) {
+		cb(kWPANTUNDStatus_Ok, boost::any(mLocalDataset.mChannel.get()));
+	} else {
+		cb(kWPANTUNDStatus_Ok, boost::any(Data()));
+	}
+}
+
+void
+SpinelNCPInstance::get_prop_DatasetPSKc(CallbackWithStatusArg1 cb)
+{
+	if (mLocalDataset.mPSKc.has_value()) {
+		cb(kWPANTUNDStatus_Ok, boost::any(mLocalDataset.mPSKc.get()));
+	} else {
+		cb(kWPANTUNDStatus_Ok, boost::any(Data()));
+	}
+}
+
+void
+SpinelNCPInstance::get_prop_DatasetChannelMaskPage0(CallbackWithStatusArg1 cb)
+{
+	if (mLocalDataset.mChannelMaskPage0.has_value()) {
+		cb(kWPANTUNDStatus_Ok, boost::any(mLocalDataset.mChannelMaskPage0.get()));
+	} else {
+		cb(kWPANTUNDStatus_Ok, boost::any(Data()));
+	}
+}
+
+void
+SpinelNCPInstance::get_prop_DatasetSecPolicyKeyRotation(CallbackWithStatusArg1 cb)
+{
+	if (mLocalDataset.mSecurityPolicy.has_value()) {
+		cb(kWPANTUNDStatus_Ok, boost::any(mLocalDataset.mSecurityPolicy.get().mKeyRotationTime));
+	} else {
+		cb(kWPANTUNDStatus_Ok, boost::any(Data()));
+	}
+}
+
+void
+SpinelNCPInstance::get_prop_DatasetSecPolicyFlags(CallbackWithStatusArg1 cb)
+{
+	if (mLocalDataset.mSecurityPolicy.has_value()) {
+		cb(kWPANTUNDStatus_Ok, boost::any(mLocalDataset.mSecurityPolicy.get().mFlags));
+	} else {
+		cb(kWPANTUNDStatus_Ok, boost::any(Data()));
+	}
+}
+
+void
+SpinelNCPInstance::get_prop_DatasetRawTlvs(CallbackWithStatusArg1 cb)
+{
+	if (mLocalDataset.mRawTlvs.has_value()) {
+		cb(kWPANTUNDStatus_Ok, boost::any(mLocalDataset.mRawTlvs.get()));
+	} else {
+		cb(kWPANTUNDStatus_Ok, boost::any(Data()));
+	}
+}
+
+void
+SpinelNCPInstance::get_prop_DatasetDestIpAddress(CallbackWithStatusArg1 cb)
+{
+	if (mLocalDataset.mDestIpAddress.has_value()) {
+		cb(kWPANTUNDStatus_Ok, boost::any(in6_addr_to_string(mLocalDataset.mDestIpAddress.get())));
+	} else {
+		cb(kWPANTUNDStatus_Ok, boost::any(Data()));
+	}
+}
+
+void
+SpinelNCPInstance::get_prop_DatasetAllFileds(CallbackWithStatusArg1 cb)
+{
+	std::list<std::string> list;
+	mLocalDataset.convert_to_string_list(list);
+	cb(kWPANTUNDStatus_Ok, boost::any(list));
+}
+
+void
+SpinelNCPInstance::get_prop_DatasetAllFiledsAsValMap(CallbackWithStatusArg1 cb)
+{
+	ValueMap map;
+	mLocalDataset.convert_to_valuemap(map);
+	cb(kWPANTUNDStatus_Ok, boost::any(map));
+}
+
+void
+SpinelNCPInstance::get_prop_DatasetCommand(CallbackWithStatusArg1 cb)
+{
+	std::list<std::string> help_string;
+	get_dataset_command_help(help_string);
+	cb(kWPANTUNDStatus_Ok, boost::any(help_string));
+}
+
+void
+SpinelNCPInstance::get_prop_DaemonTickleOnHostDidWake(CallbackWithStatusArg1 cb)
+{
+	cb(kWPANTUNDStatus_Ok, boost::any(mTickleOnHostDidWake));
+}
 
 void
 SpinelNCPInstance::property_get_value(
@@ -1977,466 +2627,8 @@ SpinelNCPInstance::property_get_value(
 		syslog(LOG_INFO, "property_get_value: key: \"%s\"", key.c_str());
 	}
 
-#define SIMPLE_SPINEL_GET(prop__, type__)                                \
-	start_new_task(SpinelNCPTaskSendCommand::Factory(this)               \
-		.set_callback(cb)                                                \
-		.add_command(                                                    \
-			SpinelPackData(SPINEL_FRAME_PACK_CMD_PROP_VALUE_GET, prop__) \
-		)                                                                \
-		.set_reply_format(type__)                                        \
-		.finish()                                                        \
-	)
-
-	if (false) {
-
-	} else if (mVendorCustom.is_property_key_supported(key)) {
+	if (mVendorCustom.is_property_key_supported(key)) {
 		mVendorCustom.property_get_value(key, cb);
-
-
-
-
-
-
-
-	} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_NestLabs_LegacyMeshLocalPrefix)) {
-		if (!mCapabilities.count(SPINEL_CAP_NEST_LEGACY_INTERFACE)) {
-			cb(kWPANTUNDStatus_FeatureNotSupported, boost::any(std::string("Legacy Capability Not Supported by NCP")));
-		} else {
-			SIMPLE_SPINEL_GET(SPINEL_PROP_NEST_LEGACY_ULA_PREFIX, SPINEL_DATATYPE_DATA_S);
-		}
-
-	} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_ThreadChildTable)) {
-		start_new_task(boost::shared_ptr<SpinelNCPTask>(
-			new SpinelNCPTaskGetNetworkTopology(
-				this,
-				cb,
-				SpinelNCPTaskGetNetworkTopology::kChildTable,
-				SpinelNCPTaskGetNetworkTopology::kResultFormat_StringArray
-			)
-		));
-	} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_ThreadChildTableAsValMap)) {
-		start_new_task(boost::shared_ptr<SpinelNCPTask>(
-			new SpinelNCPTaskGetNetworkTopology(
-				this,
-				cb,
-				SpinelNCPTaskGetNetworkTopology::kChildTable,
-				SpinelNCPTaskGetNetworkTopology::kResultFormat_ValueMapArray
-			)
-		));
-
-	} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_ThreadChildTableAddresses)) {
-		start_new_task(boost::shared_ptr<SpinelNCPTask>(
-			new SpinelNCPTaskGetNetworkTopology(
-				this,
-				cb,
-				SpinelNCPTaskGetNetworkTopology::kChildTableAddresses,
-				SpinelNCPTaskGetNetworkTopology::kResultFormat_StringArray
-			)
-		));
-
-	} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_ThreadChildTimeout)) {
-		SIMPLE_SPINEL_GET(SPINEL_PROP_THREAD_CHILD_TIMEOUT, SPINEL_DATATYPE_UINT32_S);
-
-	} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_ThreadNeighborTable)) {
-		start_new_task(boost::shared_ptr<SpinelNCPTask>(
-			new SpinelNCPTaskGetNetworkTopology(
-				this,
-				cb,
-				SpinelNCPTaskGetNetworkTopology::kNeighborTable,
-				SpinelNCPTaskGetNetworkTopology::kResultFormat_StringArray
-			)
-		));
-
-	} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_ThreadNeighborTableAsValMap)) {
-		start_new_task(boost::shared_ptr<SpinelNCPTask>(
-			new SpinelNCPTaskGetNetworkTopology(
-				this,
-				cb,
-				SpinelNCPTaskGetNetworkTopology::kNeighborTable,
-				SpinelNCPTaskGetNetworkTopology::kResultFormat_ValueMapArray
-			)
-		));
-
-	} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_ThreadNeighborTableErrorRates)) {
-		if (!mCapabilities.count(SPINEL_CAP_ERROR_RATE_TRACKING)) {
-			cb(kWPANTUNDStatus_FeatureNotSupported, boost::any(std::string("Error Rate Tracking Feature Not Supported")));
-		} else {
-			start_new_task(boost::shared_ptr<SpinelNCPTask>(
-				new SpinelNCPTaskGetNetworkTopology(
-					this,
-					cb,
-					SpinelNCPTaskGetNetworkTopology::kNeighborTableErrorRates,
-					SpinelNCPTaskGetNetworkTopology::kResultFormat_StringArray
-				)
-			));
-		}
-
-	} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_ThreadNeighborTableErrorRatesAsValMap)) {
-		if (!mCapabilities.count(SPINEL_CAP_ERROR_RATE_TRACKING)) {
-			cb(kWPANTUNDStatus_FeatureNotSupported, boost::any(std::string("Error Rate Tracking Feature Not Supported")));
-		} else {
-			start_new_task(boost::shared_ptr<SpinelNCPTask>(
-				new SpinelNCPTaskGetNetworkTopology(
-					this,
-					cb,
-					SpinelNCPTaskGetNetworkTopology::kNeighborTableErrorRates,
-					SpinelNCPTaskGetNetworkTopology::kResultFormat_ValueMapArray
-				)
-			));
-		}
-
-	} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_ThreadRouterTable)) {
-		start_new_task(boost::shared_ptr<SpinelNCPTask>(
-			new SpinelNCPTaskGetNetworkTopology(
-				this,
-				cb,
-				SpinelNCPTaskGetNetworkTopology::kRouterTable,
-				SpinelNCPTaskGetNetworkTopology::kResultFormat_StringArray
-			)
-		));
-
-	} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_ThreadRouterTableAsValMap)) {
-		start_new_task(boost::shared_ptr<SpinelNCPTask>(
-			new SpinelNCPTaskGetNetworkTopology(
-				this,
-				cb,
-				SpinelNCPTaskGetNetworkTopology::kRouterTable,
-				SpinelNCPTaskGetNetworkTopology::kResultFormat_ValueMapArray
-			)
-		));
-
-	} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_ThreadParent)) {
-		start_new_task(SpinelNCPTaskSendCommand::Factory(this)
-				.set_callback(cb)
-				.add_command(
-					SpinelPackData(SPINEL_FRAME_PACK_CMD_PROP_VALUE_GET, SPINEL_PROP_THREAD_PARENT)
-				)
-				.set_reply_unpacker(boost::bind(unpack_parent_info, _1, _2, _3, /* as_val_map */ false))
-				.finish()
-			);
-
-	} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_ThreadParentAsValMap)) {
-		start_new_task(SpinelNCPTaskSendCommand::Factory(this)
-				.set_callback(cb)
-				.add_command(
-					SpinelPackData(SPINEL_FRAME_PACK_CMD_PROP_VALUE_GET, SPINEL_PROP_THREAD_PARENT)
-				)
-				.set_reply_unpacker(boost::bind(unpack_parent_info, _1, _2, _3, /* as_val_map */ true))
-				.finish()
-			);
-
-	} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_ThreadAddressCacheTable)) {
-		start_new_task(SpinelNCPTaskSendCommand::Factory(this)
-				.set_callback(cb)
-				.add_command(
-					SpinelPackData(SPINEL_FRAME_PACK_CMD_PROP_VALUE_GET, SPINEL_PROP_THREAD_ADDRESS_CACHE_TABLE)
-				)
-				.set_reply_unpacker(boost::bind(unpack_address_cache_table, _1, _2, _3, /* as_val_map */ false))
-				.finish()
-			);
-
-	} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_ThreadAddressCacheTableAsValMap)) {
-		start_new_task(SpinelNCPTaskSendCommand::Factory(this)
-				.set_callback(cb)
-				.add_command(
-					SpinelPackData(SPINEL_FRAME_PACK_CMD_PROP_VALUE_GET, SPINEL_PROP_THREAD_ADDRESS_CACHE_TABLE)
-				)
-				.set_reply_unpacker(boost::bind(unpack_address_cache_table, _1, _2, _3, /* as_val_map */ true))
-				.finish()
-			);
-
-	} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_OpenThreadMsgBufferCounters)) {
-		start_new_task(boost::shared_ptr<SpinelNCPTask>(
-			new SpinelNCPTaskGetMsgBufferCounters(
-				this,
-				cb,
-				SpinelNCPTaskGetMsgBufferCounters::kResultFormat_StringArray
-			)
-		));
-
-	} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_OpenThreadMsgBufferCountersAsString)) {
-		start_new_task(boost::shared_ptr<SpinelNCPTask>(
-			new SpinelNCPTaskGetMsgBufferCounters(
-				this,
-				cb,
-				SpinelNCPTaskGetMsgBufferCounters::kResultFormat_String
-			)
-		));
-
-	} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_OpenThreadLogLevel)) {
-		SIMPLE_SPINEL_GET(SPINEL_PROP_DEBUG_NCP_LOG_LEVEL, SPINEL_DATATYPE_UINT8_S);
-
-	} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_OpenThreadSteeringDataSetWhenJoinable)) {
-		cb(0, boost::any(mSetSteeringDataWhenJoinable));
-
-	} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_OpenThreadSteeringDataAddress)) {
-		cb(0, boost::any(nl::Data(mSteeringDataAddress, sizeof(mSteeringDataAddress))));
-
-	} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_DatasetActiveTimestamp)) {
-		if (mLocalDataset.mActiveTimestamp.has_value()) {
-			cb(kWPANTUNDStatus_Ok, boost::any(mLocalDataset.mActiveTimestamp.get()));
-		} else {
-			cb(kWPANTUNDStatus_Ok, boost::any(Data()));
-		}
-
-	} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_DatasetPendingTimestamp)) {
-		if (mLocalDataset.mPendingTimestamp.has_value()) {
-			cb(kWPANTUNDStatus_Ok, boost::any(mLocalDataset.mPendingTimestamp.get()));
-		} else {
-			cb(kWPANTUNDStatus_Ok, boost::any(Data()));
-		}
-
-	} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_DatasetMasterKey)) {
-		if (mLocalDataset.mMasterKey.has_value()) {
-			cb(kWPANTUNDStatus_Ok, boost::any(mLocalDataset.mMasterKey.get()));
-		} else {
-			cb(kWPANTUNDStatus_Ok, boost::any(Data()));
-		}
-
-	} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_DatasetNetworkName)) {
-		if (mLocalDataset.mNetworkName.has_value()) {
-			cb(kWPANTUNDStatus_Ok, boost::any(mLocalDataset.mNetworkName.get()));
-		} else {
-			cb(kWPANTUNDStatus_Ok, boost::any(Data()));
-		}
-
-	} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_DatasetExtendedPanId)) {
-		if (mLocalDataset.mExtendedPanId.has_value()) {
-			cb(kWPANTUNDStatus_Ok, boost::any(mLocalDataset.mExtendedPanId.get()));
-		} else {
-			cb(kWPANTUNDStatus_Ok, boost::any(Data()));
-		}
-
-	} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_DatasetMeshLocalPrefix)) {
-		if (mLocalDataset.mMeshLocalPrefix.has_value()) {
-			cb(kWPANTUNDStatus_Ok, boost::any(in6_addr_to_string(mLocalDataset.mMeshLocalPrefix.get())));
-		} else {
-			cb(kWPANTUNDStatus_Ok, boost::any(Data()));
-		}
-
-	} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_DatasetDelay)) {
-		if (mLocalDataset.mDelay.has_value()) {
-			cb(kWPANTUNDStatus_Ok, boost::any(mLocalDataset.mDelay.get()));
-		} else {
-			cb(kWPANTUNDStatus_Ok, boost::any(Data()));
-		}
-
-	} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_DatasetPanId)) {
-		if (mLocalDataset.mPanId.has_value()) {
-			cb(kWPANTUNDStatus_Ok, boost::any(mLocalDataset.mPanId.get()));
-		} else {
-			cb(kWPANTUNDStatus_Ok, boost::any(Data()));
-		}
-
-	} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_DatasetChannel)) {
-		if (mLocalDataset.mChannel.has_value()) {
-			cb(kWPANTUNDStatus_Ok, boost::any(mLocalDataset.mChannel.get()));
-		} else {
-			cb(kWPANTUNDStatus_Ok, boost::any(Data()));
-		}
-
-	} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_DatasetPSKc)) {
-		if (mLocalDataset.mPSKc.has_value()) {
-			cb(kWPANTUNDStatus_Ok, boost::any(mLocalDataset.mPSKc.get()));
-		} else {
-			cb(kWPANTUNDStatus_Ok, boost::any(Data()));
-		}
-
-	} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_DatasetChannelMaskPage0)) {
-		if (mLocalDataset.mChannelMaskPage0.has_value()) {
-			cb(kWPANTUNDStatus_Ok, boost::any(mLocalDataset.mChannelMaskPage0.get()));
-		} else {
-			cb(kWPANTUNDStatus_Ok, boost::any(Data()));
-		}
-
-	} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_DatasetSecPolicyKeyRotation)) {
-		if (mLocalDataset.mSecurityPolicy.has_value()) {
-			cb(kWPANTUNDStatus_Ok, boost::any(mLocalDataset.mSecurityPolicy.get().mKeyRotationTime));
-		} else {
-			cb(kWPANTUNDStatus_Ok, boost::any(Data()));
-		}
-
-	} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_DatasetSecPolicyFlags)) {
-		if (mLocalDataset.mSecurityPolicy.has_value()) {
-			cb(kWPANTUNDStatus_Ok, boost::any(mLocalDataset.mSecurityPolicy.get().mFlags));
-		} else {
-			cb(kWPANTUNDStatus_Ok, boost::any(Data()));
-		}
-
-	} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_DatasetRawTlvs)) {
-		if (mLocalDataset.mRawTlvs.has_value()) {
-			cb(kWPANTUNDStatus_Ok, boost::any(mLocalDataset.mRawTlvs.get()));
-		} else {
-			cb(kWPANTUNDStatus_Ok, boost::any(Data()));
-		}
-
-	} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_DatasetDestIpAddress)) {
-		if (mLocalDataset.mDestIpAddress.has_value()) {
-			cb(kWPANTUNDStatus_Ok, boost::any(in6_addr_to_string(mLocalDataset.mDestIpAddress.get())));
-		} else {
-			cb(kWPANTUNDStatus_Ok, boost::any(Data()));
-		}
-
-	} else if ((strcaseequal(key.c_str(), kWPANTUNDProperty_DatasetAllFileds)) ||
-	           (strcaseequal(key.c_str(), kWPANTUNDProperty_DatasetAllFileds_AltString))
-	) {
-		std::list<std::string> list;
-		mLocalDataset.convert_to_string_list(list);
-		cb(kWPANTUNDStatus_Ok, boost::any(list));
-
-	} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_DatasetAllFiledsAsValMap)) {
-		ValueMap map;
-		mLocalDataset.convert_to_valuemap(map);
-		cb(kWPANTUNDStatus_Ok, boost::any(map));
-
-	} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_DatasetCommand)) {
-		std::list<std::string> help_string;
-		get_dataset_command_help(help_string);
-		cb(kWPANTUNDStatus_Ok, boost::any(help_string));
-
-	} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_DaemonTickleOnHostDidWake)) {
-		cb(kWPANTUNDStatus_Ok, boost::any(mTickleOnHostDidWake));
-
-	} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_NCPCounterAllMac)) {
-		if (!mCapabilities.count(SPINEL_CAP_COUNTERS)) {
-			cb(kWPANTUNDStatus_FeatureNotSupported, boost::any(std::string("Channel Monitoring Feature Not Supported")));
-		} else {
-			start_new_task(SpinelNCPTaskSendCommand::Factory(this)
-				.set_callback(cb)
-				.add_command(
-					SpinelPackData(SPINEL_FRAME_PACK_CMD_PROP_VALUE_GET, SPINEL_PROP_CNTR_ALL_MAC_COUNTERS)
-				)
-				.set_reply_unpacker(boost::bind(unpack_ncp_counters_all_mac, _1, _2, _3, /* as_val_map */ false))
-				.finish()
-			);
-		}
-
-	} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_NCPCounterAllMacAsValMap)) {
-		if (!mCapabilities.count(SPINEL_CAP_COUNTERS)) {
-			cb(kWPANTUNDStatus_FeatureNotSupported, boost::any(std::string("Channel Monitoring Feature Not Supported")));
-		} else {
-			start_new_task(SpinelNCPTaskSendCommand::Factory(this)
-				.set_callback(cb)
-				.add_command(
-					SpinelPackData(SPINEL_FRAME_PACK_CMD_PROP_VALUE_GET, SPINEL_PROP_CNTR_ALL_MAC_COUNTERS)
-				)
-				.set_reply_unpacker(boost::bind(unpack_ncp_counters_all_mac, _1, _2, _3, /* as_val_map */ true))
-				.finish()
-			);
-		}
-
-	} else if (strncaseequal(key.c_str(), kWPANTUNDProperty_Spinel_CounterPrefix, sizeof(kWPANTUNDProperty_Spinel_CounterPrefix)-1)) {
-		int cntr_key = 0;
-
-#define CNTR_KEY(x)	\
-	else if (strcaseequal(key.c_str()+sizeof(kWPANTUNDProperty_Spinel_CounterPrefix)-1, # x)) { \
-		cntr_key = SPINEL_PROP_CNTR_ ## x; \
-	}
-
-		// Check to see if the counter name is an integer.
-		cntr_key = (int)strtol(key.c_str()+(int)sizeof(kWPANTUNDProperty_Spinel_CounterPrefix)-1, NULL, 0);
-
-		if ( (cntr_key > 0)
-		  && (cntr_key < SPINEL_PROP_CNTR__END-SPINEL_PROP_CNTR__BEGIN)
-		) {
-			// Counter name was a valid integer. Let's use it.
-			cntr_key += SPINEL_PROP_CNTR__BEGIN;
-		}
-
-		CNTR_KEY(TX_PKT_TOTAL)
-		CNTR_KEY(TX_PKT_UNICAST)
-		CNTR_KEY(TX_PKT_BROADCAST)
-		CNTR_KEY(TX_PKT_ACK_REQ)
-		CNTR_KEY(TX_PKT_ACKED)
-		CNTR_KEY(TX_PKT_NO_ACK_REQ)
-		CNTR_KEY(TX_PKT_DATA)
-		CNTR_KEY(TX_PKT_DATA_POLL)
-		CNTR_KEY(TX_PKT_BEACON)
-		CNTR_KEY(TX_PKT_BEACON_REQ)
-		CNTR_KEY(TX_PKT_OTHER)
-		CNTR_KEY(TX_PKT_RETRY)
-		CNTR_KEY(TX_ERR_CCA)
-		CNTR_KEY(TX_ERR_ABORT)
-		CNTR_KEY(RX_PKT_TOTAL)
-		CNTR_KEY(RX_PKT_UNICAST)
-		CNTR_KEY(RX_PKT_BROADCAST)
-		CNTR_KEY(RX_PKT_DATA)
-		CNTR_KEY(RX_PKT_DATA_POLL)
-		CNTR_KEY(RX_PKT_BEACON)
-		CNTR_KEY(RX_PKT_BEACON_REQ)
-		CNTR_KEY(RX_PKT_OTHER)
-		CNTR_KEY(RX_PKT_FILT_WL)
-		CNTR_KEY(RX_PKT_FILT_DA)
-		CNTR_KEY(RX_ERR_EMPTY)
-		CNTR_KEY(RX_ERR_UKWN_NBR)
-		CNTR_KEY(RX_ERR_NVLD_SADDR)
-		CNTR_KEY(RX_ERR_SECURITY)
-		CNTR_KEY(RX_ERR_BAD_FCS)
-		CNTR_KEY(RX_ERR_OTHER)
-		CNTR_KEY(TX_IP_SEC_TOTAL)
-		CNTR_KEY(TX_IP_INSEC_TOTAL)
-		CNTR_KEY(TX_IP_DROPPED)
-		CNTR_KEY(RX_IP_SEC_TOTAL)
-		CNTR_KEY(RX_IP_INSEC_TOTAL)
-		CNTR_KEY(RX_IP_DROPPED)
-		CNTR_KEY(TX_SPINEL_TOTAL)
-		CNTR_KEY(RX_SPINEL_TOTAL)
-		CNTR_KEY(RX_SPINEL_ERR)
-		CNTR_KEY(IP_TX_SUCCESS)
-		CNTR_KEY(IP_RX_SUCCESS)
-		CNTR_KEY(IP_TX_FAILURE)
-		CNTR_KEY(IP_RX_FAILURE)
-
-#undef CNTR_KEY
-
-		if (cntr_key != 0) {
-			SIMPLE_SPINEL_GET(cntr_key, SPINEL_DATATYPE_UINT32_S);
-		} else {
-			NCPInstanceBase::property_get_value(key, cb);
-		}
-
-	} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_TimeSync_NetworkTime)) {
-		if (!mCapabilities.count(SPINEL_CAP_TIME_SYNC)) {
-			cb(kWPANTUNDStatus_FeatureNotSupported, boost::any(std::string("Time Synchronization Feature Not Supported")));
-		} else {
-			start_new_task(SpinelNCPTaskSendCommand::Factory(this)
-				.set_callback(cb)
-				.add_command(
-					SpinelPackData(SPINEL_FRAME_PACK_CMD_PROP_VALUE_GET, SPINEL_PROP_THREAD_NETWORK_TIME)
-				)
-				.set_reply_unpacker(boost::bind(unpack_thread_network_time, _1, _2, _3, false))
-				.finish()
-			);
-		}
-
-        } else if (strcaseequal(key.c_str(), kWPANTUNDProperty_TimeSync_NetworkTimeAsValMap)) {
-		if (!mCapabilities.count(SPINEL_CAP_TIME_SYNC)) {
-			cb(kWPANTUNDStatus_FeatureNotSupported, boost::any(std::string("Time Synchronization Feature Not Supported")));
-		} else {
-			start_new_task(SpinelNCPTaskSendCommand::Factory(this)
-				.set_callback(cb)
-				.add_command(
-					SpinelPackData(SPINEL_FRAME_PACK_CMD_PROP_VALUE_GET, SPINEL_PROP_THREAD_NETWORK_TIME)
-				)
-				.set_reply_unpacker(boost::bind(unpack_thread_network_time, _1, _2, _3, true))
-				.finish()
-			);
-		}
-
-	} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_TimeSync_Period)) {
-		if (!mCapabilities.count(SPINEL_CAP_TIME_SYNC)) {
-			cb(kWPANTUNDStatus_FeatureNotSupported, boost::any(std::string("Time Synchronization Feature Not Supported")));
-		} else {
-			SIMPLE_SPINEL_GET(SPINEL_PROP_TIME_SYNC_PERIOD, SPINEL_DATATYPE_UINT16_S);
-		}
-
-	} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_TimeSync_Xtal_Threshold)) {
-		if (!mCapabilities.count(SPINEL_CAP_TIME_SYNC)) {
-			cb(kWPANTUNDStatus_FeatureNotSupported, boost::any(std::string("Time Synchronization Feature Not Supported")));
-		} else {
-			SIMPLE_SPINEL_GET(SPINEL_PROP_TIME_SYNC_XTAL_THRESHOLD, SPINEL_DATATYPE_UINT16_S);
-		}
-
 	} else {
 		NCPInstanceBase::property_get_value(key, cb);
 	}

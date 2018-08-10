@@ -223,6 +223,39 @@ private:
 	void get_prop_IPv6MeshLocalPrefix(CallbackWithStatusArg1 cb);
 	void get_prop_IPv6MeshLocalAddress(CallbackWithStatusArg1 cb);
 	void get_prop_IPv6LinkLocalAddress(CallbackWithStatusArg1 cb);
+	void get_prop_ThreadChildTable(CallbackWithStatusArg1 cb);
+	void get_prop_ThreadChildTableAsValMap(CallbackWithStatusArg1 cb);
+	void get_prop_ThreadChildTableAddresses(CallbackWithStatusArg1 cb);
+	void get_prop_ThreadNeighborTable(CallbackWithStatusArg1 cb);
+	void get_prop_ThreadNeighborTableAsValMap(CallbackWithStatusArg1 cb);
+	void get_prop_ThreadNeighborTableErrorRates(CallbackWithStatusArg1 cb);
+	void get_prop_ThreadNeighborTableErrorRatesAsValMap(CallbackWithStatusArg1 cb);
+	void get_prop_ThreadRouterTable(CallbackWithStatusArg1 cb);
+	void get_prop_ThreadRouterTableAsValMap(CallbackWithStatusArg1 cb);
+	void get_prop_OpenThreadMsgBufferCounters(CallbackWithStatusArg1 cb);
+	void get_prop_OpenThreadMsgBufferCountersAsString(CallbackWithStatusArg1 cb);
+	void get_prop_OpenThreadSteeringDataSetWhenJoinable(CallbackWithStatusArg1 cb);
+	void get_prop_OpenThreadSteeringDataAddress(CallbackWithStatusArg1 cb);
+	void get_prop_DatasetActiveTimestamp(CallbackWithStatusArg1 cb);
+	void get_prop_DatasetPendingTimestamp(CallbackWithStatusArg1 cb);
+	void get_prop_DatasetMasterKey(CallbackWithStatusArg1 cb);
+	void get_prop_DatasetNetworkName(CallbackWithStatusArg1 cb);
+	void get_prop_DatasetExtendedPanId(CallbackWithStatusArg1 cb);
+	void get_prop_DatasetMeshLocalPrefix(CallbackWithStatusArg1 cb);
+	void get_prop_DatasetDelay(CallbackWithStatusArg1 cb);
+	void get_prop_DatasetPanId(CallbackWithStatusArg1 cb);
+	void get_prop_DatasetChannel(CallbackWithStatusArg1 cb);
+	void get_prop_DatasetPSKc(CallbackWithStatusArg1 cb);
+	void get_prop_DatasetChannelMaskPage0(CallbackWithStatusArg1 cb);
+	void get_prop_DatasetSecPolicyKeyRotation(CallbackWithStatusArg1 cb);
+	void get_prop_DatasetSecPolicyFlags(CallbackWithStatusArg1 cb);
+	void get_prop_DatasetRawTlvs(CallbackWithStatusArg1 cb);
+	void get_prop_DatasetDestIpAddress(CallbackWithStatusArg1 cb);
+	void get_prop_DatasetAllFileds(CallbackWithStatusArg1 cb);
+	void get_prop_DatasetAllFiledsAsValMap(CallbackWithStatusArg1 cb);
+	void get_prop_DatasetCommand(CallbackWithStatusArg1 cb);
+	void get_prop_DaemonTickleOnHostDidWake(CallbackWithStatusArg1 cb);
+
 
 
 public:
