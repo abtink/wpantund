@@ -256,7 +256,19 @@ private:
 	void get_prop_DatasetCommand(CallbackWithStatusArg1 cb);
 	void get_prop_DaemonTickleOnHostDidWake(CallbackWithStatusArg1 cb);
 
+private:
+	void set_spinel_prop(const boost::any &value, CallbackWithStatus cb, spinel_prop_key_t prop_key, char pack_type,
+			unsigned int capability = 0, bool save_in_settings = false, const std::string &prop_name = std::string());
 
+	void register_set_handler(const char *prop_name, PropUpdateHandler handler);
+	void register_set_handler_spinel(const char *prop_name, spinel_prop_key_t prop_key, char pack_type);
+	void register_set_handler_spinel_persist(const char *prop_name, spinel_prop_key_t prop_key, char pack_type);
+	void register_set_handler_capability_spinel(const char *prop_name, unsigned int capability,
+			spinel_prop_key_t prop_key, char pack_type);
+	void register_set_handler_capability_spinel_persist(const char *prop_name, unsigned int capability,
+			spinel_prop_key_t prop_key, char pack_type);
+
+	void regsiter_all_set_handlers(void);
 
 public:
 

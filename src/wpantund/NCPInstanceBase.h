@@ -288,7 +288,7 @@ protected:
 	// `boost:bind`.
 
 	typedef boost::function<void(CallbackWithStatusArg1, const std::string&)> PropGetHandler;
-	typedef boost::function<void(const boost::any&,	CallbackWithStatus, const std::string &)> PropUpdateHandler;
+	typedef boost::function<void(const boost::any&, CallbackWithStatus, const std::string &)> PropUpdateHandler;
 
 	void register_prop_get_handler(const char *key, PropGetHandler handler);
 	void register_prop_set_handler(const char *key, PropUpdateHandler handler);
