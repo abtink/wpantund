@@ -1446,7 +1446,7 @@ SpinelNCPInstance::update_mesh_local_prefix(struct in6_addr *addr)
 }
 
 // ----------------------------------------------------------------------------
-// MARK: Property Get Handlers
+// Property Get Handlers
 
 void
 SpinelNCPInstance::get_spinel_prop(CallbackWithStatusArg1 cb, spinel_prop_key_t prop_key,
@@ -1542,6 +1542,7 @@ SpinelNCPInstance::register_get_handler_capability_spinel_unpacker(const char *p
 void
 SpinelNCPInstance::regsiter_all_get_handlers(void)
 {
+	// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	// Properties associated with a spinel property with simple packing format
 
 	register_get_handler_spinel_simple(
@@ -1644,7 +1645,9 @@ SpinelNCPInstance::regsiter_all_get_handlers(void)
 		kWPANTUNDProperty_OpenThreadLogLevel,
 		SPINEL_PROP_DEBUG_NCP_LOG_LEVEL, SPINEL_DATATYPE_UINT8_S);
 
-	// Properties requiring capability check and associated with a spinel property with simple packing format
+	// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	// Properties requiring capability check and associated with a spinel property
+	// with simple packing format
 
 	register_get_handler_capability_spinel_simple(
 		kWPANTUNDProperty_NCPSleepyPollInterval,
@@ -1923,6 +1926,7 @@ SpinelNCPInstance::regsiter_all_get_handlers(void)
 		SPINEL_CAP_COUNTERS,
 		SPINEL_PROP_CNTR_IP_RX_FAILURE, SPINEL_DATATYPE_UINT32_S);
 
+	// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	// Properties associated with a spinel property using an unpacker
 
 	register_get_handler_spinel_unpacker(
@@ -1957,7 +1961,9 @@ SpinelNCPInstance::regsiter_all_get_handlers(void)
 		SPINEL_PROP_THREAD_ADDRESS_CACHE_TABLE,
 		boost::bind(unpack_address_cache_table, _1, _2, _3, /* as_val_map */ true));
 
-	// Properties requiring capability check and associated with a spinel property using an unpacker
+	// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	// Properties requiring capability check and associated with a spinel property
+	// using an unpacker
 
 	register_get_handler_capability_spinel_unpacker(
 		kWPANTUNDProperty_NCPMCUPowerState,
@@ -2016,6 +2022,7 @@ SpinelNCPInstance::regsiter_all_get_handlers(void)
 		SPINEL_CAP_TIME_SYNC,
 		SPINEL_PROP_THREAD_NETWORK_TIME, boost::bind(unpack_thread_network_time, _1, _2, _3, true));
 
+	// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	// Properties with a dedicated handler method
 
 	register_get_handler(
@@ -2260,7 +2267,6 @@ SpinelNCPInstance::get_prop_ThreadChildTableAddresses(CallbackWithStatusArg1 cb)
 		)
 	));
 }
-
 
 void
 SpinelNCPInstance::get_prop_ThreadNeighborTable(CallbackWithStatusArg1 cb)
@@ -2573,7 +2579,7 @@ SpinelNCPInstance::property_get_value(
 }
 
 // ----------------------------------------------------------------------------
-// MARK: Property Set Handlers
+// Property Set Handlers
 
 void
 SpinelNCPInstance::set_spinel_prop(
@@ -2682,149 +2688,275 @@ SpinelNCPInstance::register_set_handler_capability_spinel_persist(const char *pr
 void
 SpinelNCPInstance::regsiter_all_set_handlers(void)
 {
+	// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	// Properties associated with a spinel property
 
-	register_set_handler_spinel(kWPANTUNDProperty_NCPChannel, SPINEL_PROP_PHY_CHAN, SPINEL_DATATYPE_UINT8_C);
-	register_set_handler_spinel(kWPANTUNDProperty_NetworkPANID, SPINEL_PROP_MAC_15_4_PANID, SPINEL_DATATYPE_UINT16_C);
-	register_set_handler_spinel(kWPANTUNDProperty_NetworkPSKc, SPINEL_PROP_NET_PSKC, SPINEL_DATATYPE_DATA_C);
-	register_set_handler_spinel(kWPANTUNDProperty_NCPMACAddress, SPINEL_PROP_MAC_15_4_LADDR, SPINEL_DATATYPE_EUI64_C);
-	register_set_handler_spinel(kWPANTUNDProperty_NCPExtendedAddress, SPINEL_PROP_MAC_EXTENDED_ADDR, SPINEL_DATATYPE_EUI64_C);
-	register_set_handler_spinel(kWPANTUNDProperty_NetworkKeyIndex, SPINEL_PROP_NET_KEY_SEQUENCE_COUNTER, SPINEL_DATATYPE_UINT32_C);
-	register_set_handler_spinel(kWPANTUNDProperty_NetworkKeySwitchGuardTime, SPINEL_PROP_NET_KEY_SWITCH_GUARDTIME, SPINEL_DATATYPE_UINT32_C);
-	register_set_handler_spinel(kWPANTUNDProperty_NetworkName, SPINEL_PROP_NET_NETWORK_NAME, SPINEL_DATATYPE_UTF8_C);
-	register_set_handler_spinel(kWPANTUNDProperty_NetworkRole, SPINEL_PROP_NET_ROLE, SPINEL_DATATYPE_UINT8_C);
-	register_set_handler_spinel(kWPANTUNDProperty_ThreadPreferredRouterID, SPINEL_PROP_THREAD_PREFERRED_ROUTER_ID, SPINEL_DATATYPE_UINT8_C);
-	register_set_handler_spinel(kWPANTUNDProperty_ThreadRouterRoleEnabled, SPINEL_PROP_THREAD_ROUTER_ROLE_ENABLED, SPINEL_DATATYPE_BOOL_C);
-	register_set_handler_spinel(kWPANTUNDProperty_ThreadRouterSelectionJitter, SPINEL_PROP_THREAD_ROUTER_SELECTION_JITTER, SPINEL_DATATYPE_UINT8_C);
-	register_set_handler_spinel(kWPANTUNDProperty_ThreadRouterUpgradeThreshold, SPINEL_PROP_THREAD_ROUTER_UPGRADE_THRESHOLD, SPINEL_DATATYPE_UINT8_C);
-	register_set_handler_spinel(kWPANTUNDProperty_ThreadRouterDowngradeThreshold, SPINEL_PROP_THREAD_ROUTER_DOWNGRADE_THRESHOLD, SPINEL_DATATYPE_UINT8_C);
+	register_set_handler_spinel(
+		kWPANTUNDProperty_NCPChannel,
+		SPINEL_PROP_PHY_CHAN, SPINEL_DATATYPE_UINT8_C);
+	register_set_handler_spinel(
+		kWPANTUNDProperty_NetworkPANID,
+		SPINEL_PROP_MAC_15_4_PANID, SPINEL_DATATYPE_UINT16_C);
+	register_set_handler_spinel(
+		kWPANTUNDProperty_NetworkPSKc,
+		SPINEL_PROP_NET_PSKC, SPINEL_DATATYPE_DATA_C);
+	register_set_handler_spinel(
+		kWPANTUNDProperty_NCPMACAddress,
+		SPINEL_PROP_MAC_15_4_LADDR, SPINEL_DATATYPE_EUI64_C);
+	register_set_handler_spinel(
+		kWPANTUNDProperty_NCPExtendedAddress,
+		SPINEL_PROP_MAC_EXTENDED_ADDR, SPINEL_DATATYPE_EUI64_C);
+	register_set_handler_spinel(
+		kWPANTUNDProperty_NetworkKeyIndex,
+		SPINEL_PROP_NET_KEY_SEQUENCE_COUNTER, SPINEL_DATATYPE_UINT32_C);
+	register_set_handler_spinel(
+		kWPANTUNDProperty_NetworkKeySwitchGuardTime,
+		SPINEL_PROP_NET_KEY_SWITCH_GUARDTIME, SPINEL_DATATYPE_UINT32_C);
+	register_set_handler_spinel(
+		kWPANTUNDProperty_NetworkName,
+		SPINEL_PROP_NET_NETWORK_NAME, SPINEL_DATATYPE_UTF8_C);
+	register_set_handler_spinel(
+		kWPANTUNDProperty_NetworkRole,
+		SPINEL_PROP_NET_ROLE, SPINEL_DATATYPE_UINT8_C);
+	register_set_handler_spinel(
+		kWPANTUNDProperty_ThreadPreferredRouterID,
+		SPINEL_PROP_THREAD_PREFERRED_ROUTER_ID, SPINEL_DATATYPE_UINT8_C);
+	register_set_handler_spinel(
+		kWPANTUNDProperty_ThreadRouterRoleEnabled,
+		SPINEL_PROP_THREAD_ROUTER_ROLE_ENABLED, SPINEL_DATATYPE_BOOL_C);
+	register_set_handler_spinel(
+		kWPANTUNDProperty_ThreadRouterSelectionJitter,
+		SPINEL_PROP_THREAD_ROUTER_SELECTION_JITTER, SPINEL_DATATYPE_UINT8_C);
+	register_set_handler_spinel(
+		kWPANTUNDProperty_ThreadRouterUpgradeThreshold,
+		SPINEL_PROP_THREAD_ROUTER_UPGRADE_THRESHOLD, SPINEL_DATATYPE_UINT8_C);
+	register_set_handler_spinel(
+		kWPANTUNDProperty_ThreadRouterDowngradeThreshold,
+		SPINEL_PROP_THREAD_ROUTER_DOWNGRADE_THRESHOLD, SPINEL_DATATYPE_UINT8_C);
 
-	// Properties requiring persistence (saving in settings) and associated with a spinel property
+	// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	// Properties requiring persistence (saving in settings) and associated with a
+	// spinel property
 
-	register_set_handler_spinel_persist(kWPANTUNDProperty_NCPCCAThreshold, SPINEL_PROP_PHY_CCA_THRESHOLD, SPINEL_DATATYPE_INT8_C);
-	register_set_handler_spinel_persist(kWPANTUNDProperty_NCPTXPower, SPINEL_PROP_PHY_TX_POWER, SPINEL_DATATYPE_INT8_C);
-	register_set_handler_spinel_persist(kWPANTUNDProperty_ThreadChildTimeout, SPINEL_PROP_THREAD_CHILD_TIMEOUT, SPINEL_DATATYPE_UINT32_C);
-	register_set_handler_spinel_persist(kWPANTUNDProperty_ThreadDeviceMode, SPINEL_PROP_THREAD_MODE, SPINEL_DATATYPE_UINT8_C);
-	register_set_handler_spinel_persist(kWPANTUNDProperty_OpenThreadLogLevel, SPINEL_PROP_DEBUG_NCP_LOG_LEVEL, SPINEL_DATATYPE_UINT8_C);
+	register_set_handler_spinel_persist(
+		kWPANTUNDProperty_NCPCCAThreshold,
+		SPINEL_PROP_PHY_CCA_THRESHOLD, SPINEL_DATATYPE_INT8_C);
+	register_set_handler_spinel_persist(
+		kWPANTUNDProperty_NCPTXPower,
+		SPINEL_PROP_PHY_TX_POWER, SPINEL_DATATYPE_INT8_C);
+	register_set_handler_spinel_persist(
+		kWPANTUNDProperty_ThreadChildTimeout,
+		SPINEL_PROP_THREAD_CHILD_TIMEOUT, SPINEL_DATATYPE_UINT32_C);
+	register_set_handler_spinel_persist(
+		kWPANTUNDProperty_ThreadDeviceMode,
+		SPINEL_PROP_THREAD_MODE, SPINEL_DATATYPE_UINT8_C);
+	register_set_handler_spinel_persist(
+		kWPANTUNDProperty_OpenThreadLogLevel,
+		SPINEL_PROP_DEBUG_NCP_LOG_LEVEL, SPINEL_DATATYPE_UINT8_C);
 
-	register_set_handler_spinel_persist(kWPANTUNDProperty_NCPChannelMask, SPINEL_PROP_PHY_CHAN_SUPPORTED, SPINEL_DATATYPE_DATA_C,
+	// Properties with a `ValueConverter`
+	register_set_handler_spinel_persist(
+		kWPANTUNDProperty_NCPChannelMask,
+		SPINEL_PROP_PHY_CHAN_SUPPORTED, SPINEL_DATATYPE_DATA_C,
 		&SpinelNCPInstance::convert_value_channel_mask);
 
+	// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	// Properties requiring capability check and associated with a spinel property
 
-	register_set_handler_capability_spinel(kWPANTUNDProperty_MACWhitelistEnabled, SPINEL_CAP_MAC_WHITELIST,
+	register_set_handler_capability_spinel(
+		kWPANTUNDProperty_MACWhitelistEnabled,
+		SPINEL_CAP_MAC_WHITELIST,
 		SPINEL_PROP_MAC_WHITELIST_ENABLED, SPINEL_DATATYPE_BOOL_C);
-	register_set_handler_capability_spinel(kWPANTUNDProperty_MACBlacklistEnabled, SPINEL_CAP_MAC_WHITELIST,
+	register_set_handler_capability_spinel(
+		kWPANTUNDProperty_MACBlacklistEnabled,
+		SPINEL_CAP_MAC_WHITELIST,
 		SPINEL_PROP_MAC_BLACKLIST_ENABLED, SPINEL_DATATYPE_BOOL_C);
-	register_set_handler_capability_spinel(kWPANTUNDProperty_CommissionerProvisioningUrl, SPINEL_CAP_THREAD_COMMISSIONER,
+	register_set_handler_capability_spinel(
+		kWPANTUNDProperty_CommissionerProvisioningUrl,
+		SPINEL_CAP_THREAD_COMMISSIONER,
 		SPINEL_PROP_MESHCOP_COMMISSIONER_PROVISIONING_URL, SPINEL_DATATYPE_UTF8_C);
-	register_set_handler_capability_spinel(kWPANTUNDProperty_CommissionerSendMgmtGet, SPINEL_CAP_THREAD_COMMISSIONER,
+	register_set_handler_capability_spinel(
+		kWPANTUNDProperty_CommissionerSendMgmtGet,
+		SPINEL_CAP_THREAD_COMMISSIONER,
 		SPINEL_PROP_MESHCOP_COMMISSIONER_MGMT_GET, SPINEL_DATATYPE_DATA_WLEN_C);
-	register_set_handler_capability_spinel(kWPANTUNDProperty_CommissionerSendMgmtSet, SPINEL_CAP_THREAD_COMMISSIONER,
+	register_set_handler_capability_spinel(
+		kWPANTUNDProperty_CommissionerSendMgmtSet,
+		SPINEL_CAP_THREAD_COMMISSIONER,
 		SPINEL_PROP_MESHCOP_COMMISSIONER_MGMT_SET, SPINEL_DATATYPE_DATA_WLEN_C);
-	register_set_handler_capability_spinel(kWPANTUNDProperty_ChannelManagerChannelSelect, SPINEL_CAP_CHANNEL_MANAGER,
+	register_set_handler_capability_spinel(
+		kWPANTUNDProperty_ChannelManagerChannelSelect,
+		SPINEL_CAP_CHANNEL_MANAGER,
 		SPINEL_PROP_CHANNEL_MANAGER_CHANNEL_SELECT, SPINEL_DATATYPE_BOOL_C);
-	register_set_handler_capability_spinel(kWPANTUNDProperty_TimeSync_Period, SPINEL_CAP_TIME_SYNC,
+	register_set_handler_capability_spinel(
+		kWPANTUNDProperty_TimeSync_Period,
+		SPINEL_CAP_TIME_SYNC,
 		SPINEL_PROP_TIME_SYNC_PERIOD, SPINEL_DATATYPE_UINT16_C);
-	register_set_handler_capability_spinel(kWPANTUNDProperty_TimeSync_XtalThreshold, SPINEL_CAP_TIME_SYNC,
+	register_set_handler_capability_spinel(
+		kWPANTUNDProperty_TimeSync_XtalThreshold,
+		SPINEL_CAP_TIME_SYNC,
 		SPINEL_PROP_TIME_SYNC_XTAL_THRESHOLD, SPINEL_DATATYPE_UINT16_C);
 
-	register_set_handler_capability_spinel(kWPANTUNDProperty_CommissionerState, SPINEL_CAP_THREAD_COMMISSIONER,
+	// Properties with a `ValueConverter`
+	register_set_handler_capability_spinel(
+		kWPANTUNDProperty_CommissionerState,
+		SPINEL_CAP_THREAD_COMMISSIONER,
 		SPINEL_PROP_MESHCOP_COMMISSIONER_STATE, SPINEL_DATATYPE_UINT8_C,
 		&SpinelNCPInstance::convert_value_CommissionerState);
 
-	// Properties requiring capability check and persistence (saving in settings), and associated with a spinel property
+	// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	// Properties requiring capability check and persistence (saving in settings),
+	// and associated with a spinel property
 
-	register_set_handler_capability_spinel_persist(kWPANTUNDProperty_NCPSleepyPollInterval,	SPINEL_CAP_ROLE_SLEEPY,
+	register_set_handler_capability_spinel_persist(
+		kWPANTUNDProperty_NCPSleepyPollInterval,
+		SPINEL_CAP_ROLE_SLEEPY,
 		SPINEL_PROP_MAC_DATA_POLL_PERIOD, SPINEL_DATATYPE_UINT32_C);
-	register_set_handler_capability_spinel_persist(kWPANTUNDProperty_TmfProxyEnabled, SPINEL_CAP_THREAD_TMF_PROXY,
+	register_set_handler_capability_spinel_persist(
+		kWPANTUNDProperty_TmfProxyEnabled,
+		SPINEL_CAP_THREAD_TMF_PROXY,
 		SPINEL_PROP_THREAD_TMF_PROXY_ENABLED, SPINEL_DATATYPE_BOOL_C);
-	register_set_handler_capability_spinel_persist(kWPANTUNDProperty_JamDetectionEnable, SPINEL_CAP_JAM_DETECT,
+	register_set_handler_capability_spinel_persist(
+		kWPANTUNDProperty_JamDetectionEnable,
+		SPINEL_CAP_JAM_DETECT,
 		SPINEL_PROP_JAM_DETECT_ENABLE, SPINEL_DATATYPE_BOOL_C);
-	register_set_handler_capability_spinel_persist(kWPANTUNDProperty_JamDetectionRssiThreshold, SPINEL_CAP_JAM_DETECT,
+	register_set_handler_capability_spinel_persist(
+		kWPANTUNDProperty_JamDetectionRssiThreshold,
+		SPINEL_CAP_JAM_DETECT,
 		SPINEL_PROP_JAM_DETECT_RSSI_THRESHOLD, SPINEL_DATATYPE_INT8_C);
-	register_set_handler_capability_spinel_persist(kWPANTUNDProperty_JamDetectionWindow, SPINEL_CAP_JAM_DETECT,
+	register_set_handler_capability_spinel_persist(
+		kWPANTUNDProperty_JamDetectionWindow,
+		SPINEL_CAP_JAM_DETECT,
 		SPINEL_PROP_JAM_DETECT_WINDOW, SPINEL_DATATYPE_UINT8_C);
-	register_set_handler_capability_spinel_persist(kWPANTUNDProperty_JamDetectionBusyPeriod, SPINEL_CAP_JAM_DETECT,
+	register_set_handler_capability_spinel_persist(
+		kWPANTUNDProperty_JamDetectionBusyPeriod,
+		SPINEL_CAP_JAM_DETECT,
 		SPINEL_PROP_JAM_DETECT_BUSY, SPINEL_DATATYPE_UINT8_C);
-	register_set_handler_capability_spinel_persist(kWPANTUNDProperty_NestLabs_LegacyMeshLocalPrefix, SPINEL_CAP_NEST_LEGACY_INTERFACE,
+	register_set_handler_capability_spinel_persist(
+		kWPANTUNDProperty_NestLabs_LegacyMeshLocalPrefix,
+		SPINEL_CAP_NEST_LEGACY_INTERFACE,
 		SPINEL_PROP_NEST_LEGACY_ULA_PREFIX, SPINEL_DATATYPE_DATA_C);
-	register_set_handler_capability_spinel_persist(kWPANTUNDProperty_ChildSupervisionInterval, SPINEL_CAP_CHILD_SUPERVISION,
+	register_set_handler_capability_spinel_persist(
+		kWPANTUNDProperty_ChildSupervisionInterval,
+		SPINEL_CAP_CHILD_SUPERVISION,
 		SPINEL_PROP_CHILD_SUPERVISION_INTERVAL, SPINEL_DATATYPE_UINT16_C);
-	register_set_handler_capability_spinel_persist(kWPANTUNDProperty_ChildSupervisionCheckTimeout, SPINEL_CAP_CHILD_SUPERVISION,
+	register_set_handler_capability_spinel_persist(
+		kWPANTUNDProperty_ChildSupervisionCheckTimeout,
+		SPINEL_CAP_CHILD_SUPERVISION,
 		SPINEL_PROP_CHILD_SUPERVISION_CHECK_TIMEOUT, SPINEL_DATATYPE_UINT16_C);
-	register_set_handler_capability_spinel_persist(kWPANTUNDProperty_ChannelManagerNewChannel, SPINEL_CAP_CHANNEL_MANAGER,
+	register_set_handler_capability_spinel_persist(
+		kWPANTUNDProperty_ChannelManagerNewChannel,
+		SPINEL_CAP_CHANNEL_MANAGER,
 		SPINEL_PROP_CHANNEL_MANAGER_NEW_CHANNEL, SPINEL_DATATYPE_UINT8_C);
-	register_set_handler_capability_spinel_persist(kWPANTUNDProperty_ChannelManagerDelay, SPINEL_CAP_CHANNEL_MANAGER,
+	register_set_handler_capability_spinel_persist(
+		kWPANTUNDProperty_ChannelManagerDelay,
+		SPINEL_CAP_CHANNEL_MANAGER,
 		SPINEL_PROP_CHANNEL_MANAGER_DELAY, SPINEL_DATATYPE_UINT16_C);
-	register_set_handler_capability_spinel_persist(kWPANTUNDProperty_ChannelManagerAutoSelectEnabled, SPINEL_CAP_CHANNEL_MANAGER,
+	register_set_handler_capability_spinel_persist(
+		kWPANTUNDProperty_ChannelManagerAutoSelectEnabled,
+		SPINEL_CAP_CHANNEL_MANAGER,
 		SPINEL_PROP_CHANNEL_MANAGER_AUTO_SELECT_ENABLED, SPINEL_DATATYPE_BOOL_C);
-	register_set_handler_capability_spinel_persist(kWPANTUNDProperty_ChannelManagerAutoSelectInterval, SPINEL_CAP_CHANNEL_MANAGER,
+	register_set_handler_capability_spinel_persist(
+		kWPANTUNDProperty_ChannelManagerAutoSelectInterval,
+		SPINEL_CAP_CHANNEL_MANAGER,
 		SPINEL_PROP_CHANNEL_MANAGER_AUTO_SELECT_INTERVAL, SPINEL_DATATYPE_UINT32_C);
 
-	register_set_handler_capability_spinel_persist(kWPANTUNDProperty_NCPMCUPowerState, SPINEL_PROP_MCU_POWER_STATE,
+	// Properties with a `ValueConverter`
+	register_set_handler_capability_spinel_persist(
+		kWPANTUNDProperty_NCPMCUPowerState,
+		SPINEL_PROP_MCU_POWER_STATE,
 		SPINEL_PROP_MCU_POWER_STATE, SPINEL_DATATYPE_UINT8_C,
 		&SpinelNCPInstance::convert_value_NCPMCUPowerState);
-	register_set_handler_capability_spinel_persist(kWPANTUNDProperty_ChannelManagerSupportedChannelMask, SPINEL_CAP_CHANNEL_MANAGER,
+	register_set_handler_capability_spinel_persist(
+		kWPANTUNDProperty_ChannelManagerSupportedChannelMask,
+		SPINEL_CAP_CHANNEL_MANAGER,
 		SPINEL_PROP_CHANNEL_MANAGER_SUPPORTED_CHANNELS, SPINEL_DATATYPE_DATA_C,
 		&SpinelNCPInstance::convert_value_channel_mask);
-	register_set_handler_capability_spinel_persist(kWPANTUNDProperty_ChannelManagerFavoredChannelMask, SPINEL_CAP_CHANNEL_MANAGER,
+	register_set_handler_capability_spinel_persist(
+		kWPANTUNDProperty_ChannelManagerFavoredChannelMask,
+		SPINEL_CAP_CHANNEL_MANAGER,
 		SPINEL_PROP_CHANNEL_MANAGER_FAVORED_CHANNELS, SPINEL_DATATYPE_DATA_C,
 		&SpinelNCPInstance::convert_value_channel_mask);
 
-	// Properties with a dedicated handler method.
+	// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	// Properties with a dedicated handler method
 
-	register_set_handler(kWPANTUNDProperty_NetworkKey,
+	register_set_handler(
+		kWPANTUNDProperty_NetworkKey,
 		boost::bind(&SpinelNCPInstance::set_prop_NetworkKey, this, _1, _2));
-	register_set_handler(kWPANTUNDProperty_InterfaceUp,
+	register_set_handler(
+		kWPANTUNDProperty_InterfaceUp,
 		boost::bind(&SpinelNCPInstance::set_prop_InterfaceUp, this, _1, _2));
-	register_set_handler(kWPANTUNDProperty_NetworkXPANID,
+	register_set_handler(
+		kWPANTUNDProperty_NetworkXPANID,
 		boost::bind(&SpinelNCPInstance::set_prop_NetworkXPANID, this, _1, _2));
-	register_set_handler(kWPANTUNDProperty_IPv6MeshLocalPrefix,
+	register_set_handler(
+		kWPANTUNDProperty_IPv6MeshLocalPrefix,
 		boost::bind(&SpinelNCPInstance::set_prop_IPv6MeshLocalPrefix, this, _1, _2));
-	register_set_handler(kWPANTUNDProperty_ThreadConfigFilterRLOCAddresses,
+	register_set_handler(
+		kWPANTUNDProperty_ThreadConfigFilterRLOCAddresses,
 		boost::bind(&SpinelNCPInstance::set_prop_ThreadConfigFilterRLOCAddresses, this, _1, _2));
-	register_set_handler(kWPANTUNDProperty_OpenThreadSteeringDataSetWhenJoinable,
+	register_set_handler(
+		kWPANTUNDProperty_OpenThreadSteeringDataSetWhenJoinable,
 		boost::bind(&SpinelNCPInstance::set_prop_OpenThreadSteeringDataSetWhenJoinable, this, _1, _2));
-	register_set_handler(kWPANTUNDProperty_OpenThreadSteeringDataAddress,
+	register_set_handler(
+		kWPANTUNDProperty_OpenThreadSteeringDataAddress,
 		boost::bind(&SpinelNCPInstance::set_prop_OpenThreadSteeringDataAddress, this, _1, _2));
-	register_set_handler(kWPANTUNDProperty_TmfProxyStream,
+	register_set_handler(
+		kWPANTUNDProperty_TmfProxyStream,
 		boost::bind(&SpinelNCPInstance::set_prop_TmfProxyStream, this, _1, _2));
-	register_set_handler(kWPANTUNDProperty_UdpProxyStream,
+	register_set_handler(
+		kWPANTUNDProperty_UdpProxyStream,
 		boost::bind(&SpinelNCPInstance::set_prop_UdpProxyStream, this, _1, _2));
-	register_set_handler(kWPANTUNDProperty_DatasetActiveTimestamp,
+	register_set_handler(
+		kWPANTUNDProperty_DatasetActiveTimestamp,
 		boost::bind(&SpinelNCPInstance::set_prop_DatasetActiveTimestamp, this, _1, _2));
-	register_set_handler(kWPANTUNDProperty_DatasetPendingTimestamp,
+	register_set_handler(
+		kWPANTUNDProperty_DatasetPendingTimestamp,
 		boost::bind(&SpinelNCPInstance::set_prop_DatasetPendingTimestamp, this, _1, _2));
-	register_set_handler(kWPANTUNDProperty_DatasetMasterKey,
+	register_set_handler(
+		kWPANTUNDProperty_DatasetMasterKey,
 		boost::bind(&SpinelNCPInstance::set_prop_DatasetMasterKey, this, _1, _2));
-	register_set_handler(kWPANTUNDProperty_DatasetNetworkName,
+	register_set_handler(
+		kWPANTUNDProperty_DatasetNetworkName,
 		boost::bind(&SpinelNCPInstance::set_prop_DatasetNetworkName, this, _1, _2));
-	register_set_handler(kWPANTUNDProperty_DatasetExtendedPanId,
+	register_set_handler(
+		kWPANTUNDProperty_DatasetExtendedPanId,
 		boost::bind(&SpinelNCPInstance::set_prop_DatasetExtendedPanId, this, _1, _2));
-	register_set_handler(kWPANTUNDProperty_DatasetMeshLocalPrefix,
+	register_set_handler(
+		kWPANTUNDProperty_DatasetMeshLocalPrefix,
 		boost::bind(&SpinelNCPInstance::set_prop_DatasetMeshLocalPrefix, this, _1, _2));
-	register_set_handler(kWPANTUNDProperty_DatasetDelay,
+	register_set_handler(
+		kWPANTUNDProperty_DatasetDelay,
 		boost::bind(&SpinelNCPInstance::set_prop_DatasetDelay, this, _1, _2));
-	register_set_handler(kWPANTUNDProperty_DatasetPanId,
+	register_set_handler(
+		kWPANTUNDProperty_DatasetPanId,
 		boost::bind(&SpinelNCPInstance::set_prop_DatasetPanId, this, _1, _2));
-	register_set_handler(kWPANTUNDProperty_DatasetChannel,
+	register_set_handler(
+		kWPANTUNDProperty_DatasetChannel,
 		boost::bind(&SpinelNCPInstance::set_prop_DatasetChannel, this, _1, _2));
-	register_set_handler(kWPANTUNDProperty_DatasetPSKc,
+	register_set_handler(
+		kWPANTUNDProperty_DatasetPSKc,
 		boost::bind(&SpinelNCPInstance::set_prop_DatasetPSKc, this, _1, _2));
-	register_set_handler(kWPANTUNDProperty_DatasetChannelMaskPage0,
+	register_set_handler(
+		kWPANTUNDProperty_DatasetChannelMaskPage0,
 		boost::bind(&SpinelNCPInstance::set_prop_DatasetChannelMaskPage0, this, _1, _2));
-	register_set_handler(kWPANTUNDProperty_DatasetSecPolicyKeyRotation,
+	register_set_handler(
+		kWPANTUNDProperty_DatasetSecPolicyKeyRotation,
 		boost::bind(&SpinelNCPInstance::set_prop_DatasetSecPolicyKeyRotation, this, _1, _2));
-	register_set_handler(kWPANTUNDProperty_DatasetSecPolicyFlags,
+	register_set_handler(
+		kWPANTUNDProperty_DatasetSecPolicyFlags,
 		boost::bind(&SpinelNCPInstance::set_prop_DatasetSecPolicyFlags, this, _1, _2));
-	register_set_handler(kWPANTUNDProperty_DatasetRawTlvs,
+	register_set_handler(
+		kWPANTUNDProperty_DatasetRawTlvs,
 		boost::bind(&SpinelNCPInstance::set_prop_DatasetRawTlvs, this, _1, _2));
-	register_set_handler(kWPANTUNDProperty_DatasetDestIpAddress,
+	register_set_handler(
+		kWPANTUNDProperty_DatasetDestIpAddress,
 		boost::bind(&SpinelNCPInstance::set_prop_DatasetDestIpAddress, this, _1, _2));
-	register_set_handler(kWPANTUNDProperty_DatasetCommand,
+	register_set_handler(
+		kWPANTUNDProperty_DatasetCommand,
 		boost::bind(&SpinelNCPInstance::set_prop_DatasetCommand, this, _1, _2));
-	register_set_handler(kWPANTUNDProperty_DaemonTickleOnHostDidWake,
+	register_set_handler(
+		kWPANTUNDProperty_DaemonTickleOnHostDidWake,
 		boost::bind(&SpinelNCPInstance::set_prop_DaemonTickleOnHostDidWake, this, _1, _2));
 }
 
