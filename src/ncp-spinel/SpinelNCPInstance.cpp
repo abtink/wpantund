@@ -2804,10 +2804,10 @@ SpinelNCPInstance::regsiter_all_set_handlers(void)
 	register_set_handler_spinel(kWPANTUNDProperty_NetworkName, SPINEL_PROP_NET_NETWORK_NAME, SPINEL_DATATYPE_UTF8_C);
 	register_set_handler_spinel(kWPANTUNDProperty_NetworkRole, SPINEL_PROP_NET_ROLE, SPINEL_DATATYPE_UINT8_C);
 	register_set_handler_spinel(kWPANTUNDProperty_ThreadPreferredRouterID, SPINEL_PROP_THREAD_PREFERRED_ROUTER_ID, SPINEL_DATATYPE_UINT8_C);
-
-
-
-
+	register_set_handler_spinel(kWPANTUNDProperty_ThreadRouterRoleEnabled, SPINEL_PROP_THREAD_ROUTER_ROLE_ENABLED, SPINEL_DATATYPE_BOOL_C);
+	register_set_handler_spinel(kWPANTUNDProperty_ThreadRouterSelectionJitter, SPINEL_PROP_THREAD_ROUTER_SELECTION_JITTER, SPINEL_DATATYPE_UINT8_C);
+	register_set_handler_spinel(kWPANTUNDProperty_ThreadRouterUpgradeThreshold, SPINEL_PROP_THREAD_ROUTER_UPGRADE_THRESHOLD, SPINEL_DATATYPE_UINT8_C);
+	register_set_handler_spinel(kWPANTUNDProperty_ThreadRouterDowngradeThreshold, SPINEL_PROP_THREAD_ROUTER_DOWNGRADE_THRESHOLD, SPINEL_DATATYPE_UINT8_C);
 
 
 	// Properties requiring persistence (saving in settings) and associated with a spinel property
@@ -2840,6 +2840,8 @@ SpinelNCPInstance::regsiter_all_set_handlers(void)
 		SPINEL_PROP_JAM_DETECT_WINDOW, SPINEL_DATATYPE_UINT8_C);
 	register_set_handler_capability_spinel_persist(kWPANTUNDProperty_JamDetectionBusyPeriod, SPINEL_CAP_JAM_DETECT,
 		SPINEL_PROP_JAM_DETECT_BUSY, SPINEL_DATATYPE_UINT8_C);
+	register_set_handler_capability_spinel_persist(kWPANTUNDProperty_NestLabs_LegacyMeshLocalPrefix, SPINEL_CAP_NEST_LEGACY_INTERFACE,
+		SPINEL_PROP_NEST_LEGACY_ULA_PREFIX, SPINEL_DATATYPE_DATA_C);
 
 
 	// Properties with a dedicated handler method.
@@ -2984,46 +2986,6 @@ SpinelNCPInstance::property_set_value(
 			mXPANIDWasExplicitlySet = true;
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-		} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_NestLabs_LegacyMeshLocalPrefix)) {
-			Data legacy_prefix = any_to_data(value);
-			Data command =
-				SpinelPackData(
-					SPINEL_FRAME_PACK_CMD_PROP_VALUE_SET(SPINEL_DATATYPE_DATA_S),
-					SPINEL_PROP_NEST_LEGACY_ULA_PREFIX,
-					legacy_prefix.data(),
-					legacy_prefix.size()
-				);
-
-			mSettings[kWPANTUNDProperty_NestLabs_LegacyMeshLocalPrefix] = SettingsEntry(command, SPINEL_CAP_NEST_LEGACY_INTERFACE);
-
-			if (!mCapabilities.count(SPINEL_CAP_NEST_LEGACY_INTERFACE))
-			{
-				cb(kWPANTUNDStatus_FeatureNotSupported);
-			} else {
-				start_new_task(SpinelNCPTaskSendCommand::Factory(this)
-					.set_callback(cb)
-					.add_command(command)
-					.finish()
-				);
-			}
-
 		} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_IPv6MeshLocalPrefix)) {
 			struct in6_addr addr = any_to_ipv6(value);
 
@@ -3042,57 +3004,17 @@ SpinelNCPInstance::property_set_value(
 			);
 
 
-		} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_ThreadRouterRoleEnabled)) {
-			bool isEnabled = any_to_bool(value);
 
-			start_new_task(SpinelNCPTaskSendCommand::Factory(this)
-				.set_callback(cb)
-				.add_command(SpinelPackData(
-					SPINEL_FRAME_PACK_CMD_PROP_VALUE_SET(SPINEL_DATATYPE_BOOL_S),
-					SPINEL_PROP_THREAD_ROUTER_ROLE_ENABLED,
-					isEnabled
-				))
-				.finish()
-			);
 
-		} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_ThreadRouterSelectionJitter)) {
-			uint8_t jitter = static_cast<uint8_t>(any_to_int(value));
 
-			start_new_task(SpinelNCPTaskSendCommand::Factory(this)
-				.set_callback(cb)
-				.add_command(SpinelPackData(
-					SPINEL_FRAME_PACK_CMD_PROP_VALUE_SET(SPINEL_DATATYPE_UINT8_S),
-					SPINEL_PROP_THREAD_ROUTER_SELECTION_JITTER,
-					jitter
-				))
-				.finish()
-			);
 
-		} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_ThreadRouterUpgradeThreshold)) {
-			uint8_t threshold = static_cast<uint8_t>(any_to_int(value));
 
-			start_new_task(SpinelNCPTaskSendCommand::Factory(this)
-				.set_callback(cb)
-				.add_command(SpinelPackData(
-					SPINEL_FRAME_PACK_CMD_PROP_VALUE_SET(SPINEL_DATATYPE_UINT8_S),
-					SPINEL_PROP_THREAD_ROUTER_UPGRADE_THRESHOLD,
-					threshold
-				))
-				.finish()
-			);
 
-		} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_ThreadRouterDowngradeThreshold)) {
-			uint8_t threshold = static_cast<uint8_t>(any_to_int(value));
 
-			start_new_task(SpinelNCPTaskSendCommand::Factory(this)
-				.set_callback(cb)
-				.add_command(SpinelPackData(
-					SPINEL_FRAME_PACK_CMD_PROP_VALUE_SET(SPINEL_DATATYPE_UINT8_S),
-					SPINEL_PROP_THREAD_ROUTER_DOWNGRADE_THRESHOLD,
-					threshold
-				))
-				.finish()
-			);
+
+
+
+
 
 		} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_CommissionerState)) {
 			if (!mCapabilities.count(SPINEL_CAP_THREAD_COMMISSIONER)) {
