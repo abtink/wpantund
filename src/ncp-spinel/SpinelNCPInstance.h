@@ -291,6 +291,23 @@ private:
 	void set_prop_OpenThreadSteeringDataAddress(const boost::any &value, CallbackWithStatus cb);
 	void set_prop_TmfProxyStream(const boost::any &value, CallbackWithStatus cb);
 	void set_prop_UdpProxyStream(const boost::any &value, CallbackWithStatus cb);
+	void set_prop_DatasetActiveTimestamp(const boost::any &value, CallbackWithStatus cb);
+	void set_prop_DatasetPendingTimestamp(const boost::any &value, CallbackWithStatus cb);
+	void set_prop_DatasetMasterKey(const boost::any &value, CallbackWithStatus cb);
+	void set_prop_DatasetNetworkName(const boost::any &value, CallbackWithStatus cb);
+	void set_prop_DatasetExtendedPanId(const boost::any &value, CallbackWithStatus cb);
+	void set_prop_DatasetMeshLocalPrefix(const boost::any &value, CallbackWithStatus cb);
+	void set_prop_DatasetDelay(const boost::any &value, CallbackWithStatus cb);
+	void set_prop_DatasetPanId(const boost::any &value, CallbackWithStatus cb);
+	void set_prop_DatasetChannel(const boost::any &value, CallbackWithStatus cb);
+	void set_prop_DatasetPSKc(const boost::any &value, CallbackWithStatus cb);
+	void set_prop_DatasetChannelMaskPage0(const boost::any &value, CallbackWithStatus cb);
+	void set_prop_DatasetSecPolicyKeyRotation(const boost::any &value, CallbackWithStatus cb);
+	void set_prop_DatasetSecPolicyFlags(const boost::any &value, CallbackWithStatus cb);
+	void set_prop_DatasetRawTlvs(const boost::any &value, CallbackWithStatus cb);
+	void set_prop_DatasetDestIpAddress(const boost::any &value, CallbackWithStatus cb);
+	void set_prop_DatasetCommand(const boost::any &value, CallbackWithStatus cb);
+	void set_prop_DaemonTickleOnHostDidWake(const boost::any &value, CallbackWithStatus cb);
 
 public:
 

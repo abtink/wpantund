@@ -546,7 +546,7 @@ SpinelNCPInstance::get_supported_property_keys()const
 	{
 		properties.insert(kWPANTUNDProperty_TimeSync_NetworkTime);
 		properties.insert(kWPANTUNDProperty_TimeSync_Period);
-		properties.insert(kWPANTUNDProperty_TimeSync_Xtal_Threshold);
+		properties.insert(kWPANTUNDProperty_TimeSync_XtalThreshold);
 	}
 
 	{
@@ -1747,7 +1747,7 @@ SpinelNCPInstance::regsiter_all_get_handlers(void)
 		SPINEL_CAP_TIME_SYNC,
 		SPINEL_PROP_TIME_SYNC_PERIOD, SPINEL_DATATYPE_UINT16_S);
 	register_get_handler_capability_spinel_simple(
-		kWPANTUNDProperty_TimeSync_Xtal_Threshold,
+		kWPANTUNDProperty_TimeSync_XtalThreshold,
 		SPINEL_CAP_TIME_SYNC,
 		SPINEL_PROP_TIME_SYNC_XTAL_THRESHOLD, SPINEL_DATATYPE_UINT16_S);
 	register_get_handler_capability_spinel_simple(
@@ -2575,89 +2575,13 @@ SpinelNCPInstance::property_get_value(
 // ----------------------------------------------------------------------------
 // MARK: Property Set Handlers
 
-int spinel_append_any(Data &frame, const boost::any &value, char pack_type)
-{
-	int ret = kWPANTUNDStatus_Ok;
-	const char pack_format[2] = { pack_type, 0 };
-
-	switch (pack_type) {
-	case SPINEL_DATATYPE_BOOL_C:
-		frame.append(SpinelPackData(pack_format, any_to_bool(value)));
-		break;
-
-	case SPINEL_DATATYPE_UINT8_C:
-	case SPINEL_DATATYPE_INT8_C:
-	case SPINEL_DATATYPE_UINT16_C:
-	case SPINEL_DATATYPE_INT16_C:
-	case SPINEL_DATATYPE_UINT32_C:
-	case SPINEL_DATATYPE_INT32_C:
-	case SPINEL_DATATYPE_UINT_PACKED_C:
-		frame.append(SpinelPackData(pack_format, any_to_int(value)));
-		break;
-
-	case SPINEL_DATATYPE_INT64_C:
-	case SPINEL_DATATYPE_UINT64_C:
-		frame.append(SpinelPackData(pack_format, any_to_uint64(value)));
-		break;
-
-	case SPINEL_DATATYPE_IPv6ADDR_C:
-	{
-		struct in6_addr addr = any_to_ipv6(value);
-		frame.append(SpinelPackData(pack_format, &addr));
-		break;
-	}
-
-	case SPINEL_DATATYPE_EUI64_C:
-	{
-		Data eui64 = any_to_data(value);
-		if (eui64.size() == sizeof(spinel_eui64_t)) {
-			frame.append(SpinelPackData(pack_format, eui64.data()));
-		} else {
-			ret = kWPANTUNDStatus_InvalidArgument;
-		}
-		break;
-	}
-
-	case SPINEL_DATATYPE_EUI48_C:
-	{
-		Data eui48 = any_to_data(value);
-		if (eui48.size() == sizeof(spinel_eui48_t)) {
-			frame.append(SpinelPackData(pack_format, eui48.data()));
-		} else {
-			ret = kWPANTUNDStatus_InvalidArgument;
-		}
-		break;
-	}
-
-	case SPINEL_DATATYPE_DATA_WLEN_C:
-	case SPINEL_DATATYPE_DATA_C:
-	{
-		Data data = any_to_data(value);
-		frame.append(SpinelPackData(pack_format, data.data(), data.size()));
-		break;
-	}
-
-	case SPINEL_DATATYPE_UTF8_C:
-		frame.append(SpinelPackData(pack_format, any_to_string(value).c_str()));
-		break;
-
-	case SPINEL_DATATYPE_STRUCT_C:
-	case SPINEL_DATATYPE_ARRAY_C:
-	default:
-		ret = kWPANTUNDStatus_FeatureNotSupported;
-		break;
-	}
-
-	return ret;
-}
-
 void
 SpinelNCPInstance::set_spinel_prop(
 	const boost::any &value, CallbackWithStatus cb, spinel_prop_key_t prop_key, char pack_type, unsigned int capability,
 	bool save_in_settings, const std::string &prop_name)
 {
 	Data command = SpinelPackData(SPINEL_FRAME_PACK_CMD_PROP_VALUE_SET(SPINEL_DATATYPE_NULL_S), prop_key);
-	int status = spinel_append_any(command, value, pack_type);
+	int status = SpinelAppendAny(command, value, pack_type);
 
 //#!&*(@HKHK~*@)JL!J@~LJ!@L~J@LKJ!@L~J
 syslog(LOG_INFO, "ABTIN =============> set_spinel_prop: %s, %s, %c, %s, %d ",
@@ -2775,7 +2699,6 @@ SpinelNCPInstance::regsiter_all_set_handlers(void)
 	register_set_handler_spinel(kWPANTUNDProperty_ThreadRouterUpgradeThreshold, SPINEL_PROP_THREAD_ROUTER_UPGRADE_THRESHOLD, SPINEL_DATATYPE_UINT8_C);
 	register_set_handler_spinel(kWPANTUNDProperty_ThreadRouterDowngradeThreshold, SPINEL_PROP_THREAD_ROUTER_DOWNGRADE_THRESHOLD, SPINEL_DATATYPE_UINT8_C);
 
-
 	// Properties requiring persistence (saving in settings) and associated with a spinel property
 
 	register_set_handler_spinel_persist(kWPANTUNDProperty_NCPCCAThreshold, SPINEL_PROP_PHY_CCA_THRESHOLD, SPINEL_DATATYPE_INT8_C);
@@ -2786,8 +2709,6 @@ SpinelNCPInstance::regsiter_all_set_handlers(void)
 
 	register_set_handler_spinel_persist(kWPANTUNDProperty_NCPChannelMask, SPINEL_PROP_PHY_CHAN_SUPPORTED, SPINEL_DATATYPE_DATA_C,
 		&SpinelNCPInstance::convert_value_channel_mask);
-
-
 
 	// Properties requiring capability check and associated with a spinel property
 
@@ -2803,12 +2724,14 @@ SpinelNCPInstance::regsiter_all_set_handlers(void)
 		SPINEL_PROP_MESHCOP_COMMISSIONER_MGMT_SET, SPINEL_DATATYPE_DATA_WLEN_C);
 	register_set_handler_capability_spinel(kWPANTUNDProperty_ChannelManagerChannelSelect, SPINEL_CAP_CHANNEL_MANAGER,
 		SPINEL_PROP_CHANNEL_MANAGER_CHANNEL_SELECT, SPINEL_DATATYPE_BOOL_C);
+	register_set_handler_capability_spinel(kWPANTUNDProperty_TimeSync_Period, SPINEL_CAP_TIME_SYNC,
+		SPINEL_PROP_TIME_SYNC_PERIOD, SPINEL_DATATYPE_UINT16_C);
+	register_set_handler_capability_spinel(kWPANTUNDProperty_TimeSync_XtalThreshold, SPINEL_CAP_TIME_SYNC,
+		SPINEL_PROP_TIME_SYNC_XTAL_THRESHOLD, SPINEL_DATATYPE_UINT16_C);
 
 	register_set_handler_capability_spinel(kWPANTUNDProperty_CommissionerState, SPINEL_CAP_THREAD_COMMISSIONER,
 		SPINEL_PROP_MESHCOP_COMMISSIONER_STATE, SPINEL_DATATYPE_UINT8_C,
 		&SpinelNCPInstance::convert_value_CommissionerState);
-
-
 
 	// Properties requiring capability check and persistence (saving in settings), and associated with a spinel property
 
@@ -2838,7 +2761,6 @@ SpinelNCPInstance::regsiter_all_set_handlers(void)
 		SPINEL_PROP_CHANNEL_MANAGER_AUTO_SELECT_ENABLED, SPINEL_DATATYPE_BOOL_C);
 	register_set_handler_capability_spinel_persist(kWPANTUNDProperty_ChannelManagerAutoSelectInterval, SPINEL_CAP_CHANNEL_MANAGER,
 		SPINEL_PROP_CHANNEL_MANAGER_AUTO_SELECT_INTERVAL, SPINEL_DATATYPE_UINT32_C);
-
 
 	register_set_handler_capability_spinel_persist(kWPANTUNDProperty_NCPMCUPowerState, SPINEL_PROP_MCU_POWER_STATE,
 		SPINEL_PROP_MCU_POWER_STATE, SPINEL_DATATYPE_UINT8_C,
@@ -2870,6 +2792,40 @@ SpinelNCPInstance::regsiter_all_set_handlers(void)
 		boost::bind(&SpinelNCPInstance::set_prop_TmfProxyStream, this, _1, _2));
 	register_set_handler(kWPANTUNDProperty_UdpProxyStream,
 		boost::bind(&SpinelNCPInstance::set_prop_UdpProxyStream, this, _1, _2));
+	register_set_handler(kWPANTUNDProperty_DatasetActiveTimestamp,
+		boost::bind(&SpinelNCPInstance::set_prop_DatasetActiveTimestamp, this, _1, _2));
+	register_set_handler(kWPANTUNDProperty_DatasetPendingTimestamp,
+		boost::bind(&SpinelNCPInstance::set_prop_DatasetPendingTimestamp, this, _1, _2));
+	register_set_handler(kWPANTUNDProperty_DatasetMasterKey,
+		boost::bind(&SpinelNCPInstance::set_prop_DatasetMasterKey, this, _1, _2));
+	register_set_handler(kWPANTUNDProperty_DatasetNetworkName,
+		boost::bind(&SpinelNCPInstance::set_prop_DatasetNetworkName, this, _1, _2));
+	register_set_handler(kWPANTUNDProperty_DatasetExtendedPanId,
+		boost::bind(&SpinelNCPInstance::set_prop_DatasetExtendedPanId, this, _1, _2));
+	register_set_handler(kWPANTUNDProperty_DatasetMeshLocalPrefix,
+		boost::bind(&SpinelNCPInstance::set_prop_DatasetMeshLocalPrefix, this, _1, _2));
+	register_set_handler(kWPANTUNDProperty_DatasetDelay,
+		boost::bind(&SpinelNCPInstance::set_prop_DatasetDelay, this, _1, _2));
+	register_set_handler(kWPANTUNDProperty_DatasetPanId,
+		boost::bind(&SpinelNCPInstance::set_prop_DatasetPanId, this, _1, _2));
+	register_set_handler(kWPANTUNDProperty_DatasetChannel,
+		boost::bind(&SpinelNCPInstance::set_prop_DatasetChannel, this, _1, _2));
+	register_set_handler(kWPANTUNDProperty_DatasetPSKc,
+		boost::bind(&SpinelNCPInstance::set_prop_DatasetPSKc, this, _1, _2));
+	register_set_handler(kWPANTUNDProperty_DatasetChannelMaskPage0,
+		boost::bind(&SpinelNCPInstance::set_prop_DatasetChannelMaskPage0, this, _1, _2));
+	register_set_handler(kWPANTUNDProperty_DatasetSecPolicyKeyRotation,
+		boost::bind(&SpinelNCPInstance::set_prop_DatasetSecPolicyKeyRotation, this, _1, _2));
+	register_set_handler(kWPANTUNDProperty_DatasetSecPolicyFlags,
+		boost::bind(&SpinelNCPInstance::set_prop_DatasetSecPolicyFlags, this, _1, _2));
+	register_set_handler(kWPANTUNDProperty_DatasetRawTlvs,
+		boost::bind(&SpinelNCPInstance::set_prop_DatasetRawTlvs, this, _1, _2));
+	register_set_handler(kWPANTUNDProperty_DatasetDestIpAddress,
+		boost::bind(&SpinelNCPInstance::set_prop_DatasetDestIpAddress, this, _1, _2));
+	register_set_handler(kWPANTUNDProperty_DatasetCommand,
+		boost::bind(&SpinelNCPInstance::set_prop_DatasetCommand, this, _1, _2));
+	register_set_handler(kWPANTUNDProperty_DaemonTickleOnHostDidWake,
+		boost::bind(&SpinelNCPInstance::set_prop_DaemonTickleOnHostDidWake, this, _1, _2));
 }
 
 int
@@ -2889,13 +2845,6 @@ SpinelNCPInstance::convert_value_NCPMCUPowerState(const boost::any &value, boost
 	}
 
 	return ret;
-}
-
-//#$%!@^&!%&^!%@&^!%@&^!%@&!^% REMOVE THIS
-static
-Data convert_channel_mask_to_array(uint32_t mask)
-{
-	return Data();
 }
 
 int
@@ -3132,9 +3081,146 @@ SpinelNCPInstance::set_prop_UdpProxyStream(const boost::any &value, CallbackWith
 	}
 }
 
+void
+SpinelNCPInstance::set_prop_DatasetActiveTimestamp(const boost::any &value, CallbackWithStatus cb)
+{
+		mLocalDataset.mActiveTimestamp = any_to_uint64(value);
+		cb(kWPANTUNDStatus_Ok);
+}
 
+void
+SpinelNCPInstance::set_prop_DatasetPendingTimestamp(const boost::any &value, CallbackWithStatus cb)
+{
+	mLocalDataset.mPendingTimestamp = any_to_uint64(value);
+	cb(kWPANTUNDStatus_Ok);
+}
 
+void
+SpinelNCPInstance::set_prop_DatasetMasterKey(const boost::any &value, CallbackWithStatus cb)
+{
+	Data master_key = any_to_data(value);
 
+	if (master_key.size() == NCP_NETWORK_KEY_SIZE) {
+		mLocalDataset.mMasterKey = master_key;
+		cb(kWPANTUNDStatus_Ok);
+	} else {
+		cb(kWPANTUNDStatus_InvalidArgument);
+	}
+}
+
+void
+SpinelNCPInstance::set_prop_DatasetNetworkName(const boost::any &value, CallbackWithStatus cb)
+{
+	mLocalDataset.mNetworkName = any_to_string(value);
+	cb(kWPANTUNDStatus_Ok);
+}
+
+void
+SpinelNCPInstance::set_prop_DatasetExtendedPanId(const boost::any &value, CallbackWithStatus cb)
+{
+	Data xpanid = any_to_data(value);
+
+	if (xpanid.size() == sizeof(spinel_net_xpanid_t)) {
+		mLocalDataset.mExtendedPanId = any_to_data(value);
+		cb(kWPANTUNDStatus_Ok);
+	} else {
+		cb(kWPANTUNDStatus_InvalidArgument);
+	}
+}
+
+void
+SpinelNCPInstance::set_prop_DatasetMeshLocalPrefix(const boost::any &value, CallbackWithStatus cb)
+{
+	mLocalDataset.mMeshLocalPrefix = any_to_ipv6(value);
+	cb(kWPANTUNDStatus_Ok);
+}
+
+void
+SpinelNCPInstance::set_prop_DatasetDelay(const boost::any &value, CallbackWithStatus cb)
+{
+	mLocalDataset.mDelay = static_cast<uint32_t>(any_to_int(value));
+	cb(kWPANTUNDStatus_Ok);
+}
+
+void
+SpinelNCPInstance::set_prop_DatasetPanId(const boost::any &value, CallbackWithStatus cb)
+{
+	mLocalDataset.mPanId = static_cast<uint16_t>(any_to_int(value));
+	cb(kWPANTUNDStatus_Ok);
+}
+
+void
+SpinelNCPInstance::set_prop_DatasetChannel(const boost::any &value, CallbackWithStatus cb)
+{
+	mLocalDataset.mChannel = static_cast<uint8_t>(any_to_int(value));
+	cb(kWPANTUNDStatus_Ok);
+}
+
+void
+SpinelNCPInstance::set_prop_DatasetPSKc(const boost::any &value, CallbackWithStatus cb)
+{
+	Data pskc = any_to_data(value);
+
+	if (pskc.size() <= sizeof(spinel_net_pskc_t)) {
+		mLocalDataset.mPSKc = any_to_data(value);
+		cb(kWPANTUNDStatus_Ok);
+	} else {
+		cb(kWPANTUNDStatus_InvalidArgument);
+	}
+}
+
+void
+SpinelNCPInstance::set_prop_DatasetChannelMaskPage0(const boost::any &value, CallbackWithStatus cb)
+{
+	mLocalDataset.mChannelMaskPage0 = static_cast<uint32_t>(any_to_int(value));
+	cb(kWPANTUNDStatus_Ok);
+}
+
+void
+SpinelNCPInstance::set_prop_DatasetSecPolicyKeyRotation(const boost::any &value, CallbackWithStatus cb)
+{
+	ThreadDataset::SecurityPolicy policy = mLocalDataset.mSecurityPolicy.get();
+	policy.mKeyRotationTime = static_cast<uint16_t>(any_to_int(value));
+	mLocalDataset.mSecurityPolicy = policy;
+	cb(kWPANTUNDStatus_Ok);
+}
+
+void
+SpinelNCPInstance::set_prop_DatasetSecPolicyFlags(const boost::any &value, CallbackWithStatus cb)
+{
+	ThreadDataset::SecurityPolicy policy = mLocalDataset.mSecurityPolicy.get();
+	policy.mFlags = static_cast<uint8_t>(any_to_int(value));
+	mLocalDataset.mSecurityPolicy = policy;
+	cb(kWPANTUNDStatus_Ok);
+}
+
+void
+SpinelNCPInstance::set_prop_DatasetRawTlvs(const boost::any &value, CallbackWithStatus cb)
+{
+	mLocalDataset.mRawTlvs = any_to_data(value);
+	cb(kWPANTUNDStatus_Ok);
+}
+
+void
+SpinelNCPInstance::set_prop_DatasetDestIpAddress(const boost::any &value, CallbackWithStatus cb)
+{
+	mLocalDataset.mDestIpAddress = any_to_ipv6(value);
+	cb(kWPANTUNDStatus_Ok);
+}
+
+void
+SpinelNCPInstance::set_prop_DatasetCommand(const boost::any &value, CallbackWithStatus cb)
+{
+	perform_dataset_command(any_to_string(value), cb);
+}
+
+void
+SpinelNCPInstance::set_prop_DaemonTickleOnHostDidWake(const boost::any &value, CallbackWithStatus cb)
+{
+	mTickleOnHostDidWake =  any_to_bool(value);
+	syslog(LOG_INFO, "TickleOnHostDidWake is %sabled", mTickleOnHostDidWake ? "en" : "dis");
+	cb(kWPANTUNDStatus_Ok);
+}
 
 void
 SpinelNCPInstance::property_set_value(
@@ -3151,151 +3237,9 @@ SpinelNCPInstance::property_set_value(
 		return;
 	}
 
-//0000000000!!!!!!!~~~~~~~~~~~~~~~~~~~~~~~~-----------------------~~~~~~~~~~~~~~~~~---------------------~~~~~~~
-//0000000000!!!!!!!~~~~~~~~~~~~~~~~~~~~~~~~-----------------------~~~~~~~~~~~~~~~~~---------------------~~~~~~~
-
 	try {
 		if (mVendorCustom.is_property_key_supported(key)) {
 			mVendorCustom.property_set_value(key, value, cb);
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-		} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_DatasetActiveTimestamp)) {
-			mLocalDataset.mActiveTimestamp = any_to_uint64(value);
-			cb(kWPANTUNDStatus_Ok);
-
-		} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_DatasetPendingTimestamp)) {
-			mLocalDataset.mPendingTimestamp = any_to_uint64(value);
-			cb(kWPANTUNDStatus_Ok);
-
-		} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_DatasetMasterKey)) {
-			Data master_key = any_to_data(value);
-
-			if (master_key.size() == NCP_NETWORK_KEY_SIZE) {
-				mLocalDataset.mMasterKey = master_key;
-				cb(kWPANTUNDStatus_Ok);
-			} else {
-				cb(kWPANTUNDStatus_InvalidArgument);
-			}
-
-		} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_DatasetNetworkName)) {
-			mLocalDataset.mNetworkName = any_to_string(value);
-			cb(kWPANTUNDStatus_Ok);
-
-		} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_DatasetExtendedPanId)) {
-			Data xpanid = any_to_data(value);
-
-			if (xpanid.size() == sizeof(spinel_net_xpanid_t)) {
-				mLocalDataset.mExtendedPanId = any_to_data(value);
-				cb(kWPANTUNDStatus_Ok);
-			} else {
-				cb(kWPANTUNDStatus_InvalidArgument);
-			}
-
-		} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_DatasetMeshLocalPrefix)) {
-			mLocalDataset.mMeshLocalPrefix = any_to_ipv6(value);
-			cb(kWPANTUNDStatus_Ok);
-
-		} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_DatasetDelay)) {
-			mLocalDataset.mDelay = static_cast<uint32_t>(any_to_int(value));
-			cb(kWPANTUNDStatus_Ok);
-
-		} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_DatasetPanId)) {
-			mLocalDataset.mPanId = static_cast<uint16_t>(any_to_int(value));
-			cb(kWPANTUNDStatus_Ok);
-
-		} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_DatasetChannel)) {
-			mLocalDataset.mChannel = static_cast<uint8_t>(any_to_int(value));
-			cb(kWPANTUNDStatus_Ok);
-
-		} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_DatasetPSKc)) {
-			Data pskc = any_to_data(value);
-
-			if (pskc.size() <= sizeof(spinel_net_pskc_t)) {
-				mLocalDataset.mPSKc = any_to_data(value);
-				cb(kWPANTUNDStatus_Ok);
-			} else {
-				cb(kWPANTUNDStatus_InvalidArgument);
-			}
-
-		} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_DatasetChannelMaskPage0)) {
-			mLocalDataset.mChannelMaskPage0 = static_cast<uint32_t>(any_to_int(value));
-			cb(kWPANTUNDStatus_Ok);
-
-		} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_DatasetSecPolicyKeyRotation)) {
-			ThreadDataset::SecurityPolicy policy = mLocalDataset.mSecurityPolicy.get();
-			policy.mKeyRotationTime = static_cast<uint16_t>(any_to_int(value));
-			mLocalDataset.mSecurityPolicy = policy;
-			cb(kWPANTUNDStatus_Ok);
-
-		} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_DatasetSecPolicyFlags)) {
-			ThreadDataset::SecurityPolicy policy = mLocalDataset.mSecurityPolicy.get();
-			policy.mFlags = static_cast<uint8_t>(any_to_int(value));
-			mLocalDataset.mSecurityPolicy = policy;
-			cb(kWPANTUNDStatus_Ok);
-
-		} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_DatasetRawTlvs)) {
-			mLocalDataset.mRawTlvs = any_to_data(value);
-			cb(kWPANTUNDStatus_Ok);
-
-		} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_DatasetDestIpAddress)) {
-			mLocalDataset.mDestIpAddress = any_to_ipv6(value);
-			cb(kWPANTUNDStatus_Ok);
-
-		} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_DatasetCommand)) {
-			perform_dataset_command(any_to_string(value), cb);
-
-		} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_DaemonTickleOnHostDidWake)) {
-			mTickleOnHostDidWake =  any_to_bool(value);
-			syslog(LOG_INFO, "TickleOnHostDidWake is %sabled", mTickleOnHostDidWake ? "en" : "dis");
-			cb(kWPANTUNDStatus_Ok);
-
-		} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_TimeSync_Period)) {
-			uint16_t sync_period = any_to_int(value);
-
-			if (!mCapabilities.count(SPINEL_CAP_TIME_SYNC)) {
-				cb(kWPANTUNDStatus_FeatureNotSupported);
-			} else {
-				start_new_task(SpinelNCPTaskSendCommand::Factory(this)
-					.set_callback(cb)
-					.add_command(
-						SpinelPackData(SPINEL_FRAME_PACK_CMD_PROP_VALUE_SET(SPINEL_DATATYPE_UINT16_S), SPINEL_PROP_TIME_SYNC_PERIOD, sync_period)
-					)
-					.finish()
-				);
-			}
-
-		} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_TimeSync_Xtal_Threshold)) {
-			uint16_t xtal_threshold = any_to_int(value);
-
-			if (!mCapabilities.count(SPINEL_CAP_TIME_SYNC)) {
-				cb(kWPANTUNDStatus_FeatureNotSupported);
-			} else {
-				start_new_task(SpinelNCPTaskSendCommand::Factory(this)
-					.set_callback(cb)
-					.add_command(
-						SpinelPackData(SPINEL_FRAME_PACK_CMD_PROP_VALUE_SET(SPINEL_DATATYPE_UINT16_S), SPINEL_PROP_TIME_SYNC_XTAL_THRESHOLD, xtal_threshold)
-					)
-					.finish()
-				);
-			}
 
 		} else {
 			NCPInstanceBase::property_set_value(key, value, cb);

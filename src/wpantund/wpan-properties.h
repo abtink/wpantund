@@ -288,7 +288,7 @@
 #define kWPANTUNDProperty_TimeSync_NetworkTime                  "TimeSync:ThreadNetworkTime"
 #define kWPANTUNDProperty_TimeSync_NetworkTimeAsValMap          "TimeSync:ThreadNetworkTime:AsValMap"
 #define kWPANTUNDProperty_TimeSync_Period                       "TimeSync:Period"
-#define kWPANTUNDProperty_TimeSync_Xtal_Threshold               "TimeSync:XtalThreshold"
+#define kWPANTUNDProperty_TimeSync_XtalThreshold                "TimeSync:XtalThreshold"
 
 #define kWPANTUNDProperty_Stat_Prefix                           "Stat:"
 #define kWPANTUNDProperty_StatRX                                "Stat:RX"
