@@ -1261,120 +1261,46 @@ SpinelNCPInstance::perform_dataset_command(const std::string &command, CallbackW
 		cb(kWPANTUNDStatus_Ok);
 
 	} else if (strcaseequal(command.c_str(), kWPANTUNDDatasetCommand_GetActive)) {
-		start_new_task(SpinelNCPTaskSendCommand::Factory(this)
-			.set_callback(cb)
-			.add_command(
-				SpinelPackData(SPINEL_FRAME_PACK_CMD_PROP_VALUE_GET, SPINEL_PROP_THREAD_ACTIVE_DATASET)
-			)
-			.set_reply_unpacker(boost::bind(&SpinelNCPInstance::unpack_and_set_local_dataset, this, _1, _2))
-			.finish()
-		);
+		get_spinel_prop_with_unpacker(
+			boost::bind(cb, _1),
+			SPINEL_PROP_THREAD_ACTIVE_DATASET,
+			boost::bind(&SpinelNCPInstance::unpack_and_set_local_dataset, this, _1, _2));
 
 	} else if (strcaseequal(command.c_str(), kWPANTUNDDatasetCommand_SetActive)) {
 		Data frame;
 		mLocalDataset.convert_to_spinel_frame(frame);
-		start_new_task(SpinelNCPTaskSendCommand::Factory(this)
-			.set_callback(cb)
-			.add_command(
-				SpinelPackData(
-					SPINEL_FRAME_PACK_CMD_PROP_VALUE_SET(SPINEL_DATATYPE_DATA_S),
-					SPINEL_PROP_THREAD_ACTIVE_DATASET,
-					frame.data(),
-					frame.size()
-				)
-			)
-			.finish()
-		);
+		set_spinel_prop(frame, cb, SPINEL_PROP_THREAD_ACTIVE_DATASET, SPINEL_DATATYPE_DATA_C);
 
 	} else if (strcaseequal(command.c_str(), kWPANTUNDDatasetCommand_SendMgmtGetActive)) {
 		Data frame;
 		mLocalDataset.convert_to_spinel_frame(frame, /* include_values */ false);
-		start_new_task(SpinelNCPTaskSendCommand::Factory(this)
-			.set_callback(cb)
-			.add_command(
-				SpinelPackData(
-					SPINEL_FRAME_PACK_CMD_PROP_VALUE_SET(SPINEL_DATATYPE_DATA_S),
-					SPINEL_PROP_THREAD_MGMT_GET_ACTIVE_DATASET,
-					frame.data(),
-					frame.size()
-				)
-			)
-			.finish()
-		);
+		set_spinel_prop(frame, cb, SPINEL_PROP_THREAD_MGMT_GET_ACTIVE_DATASET, SPINEL_DATATYPE_DATA_C);
 
 	} else if (strcaseequal(command.c_str(), kWPANTUNDDatasetCommand_SendMgmtSetActive)) {
 		Data frame;
 		mLocalDataset.convert_to_spinel_frame(frame);
-		start_new_task(SpinelNCPTaskSendCommand::Factory(this)
-			.set_callback(cb)
-			.add_command(
-				SpinelPackData(
-					SPINEL_FRAME_PACK_CMD_PROP_VALUE_SET(SPINEL_DATATYPE_DATA_S),
-					SPINEL_PROP_THREAD_MGMT_SET_ACTIVE_DATASET,
-					frame.data(),
-					frame.size()
-				)
-			)
-			.finish()
-		);
+		set_spinel_prop(frame, cb, SPINEL_PROP_THREAD_MGMT_SET_ACTIVE_DATASET, SPINEL_DATATYPE_DATA_C);
 
 	} else if (strcaseequal(command.c_str(), kWPANTUNDDatasetCommand_GetPending)) {
-		start_new_task(SpinelNCPTaskSendCommand::Factory(this)
-			.set_callback(cb)
-			.add_command(
-				SpinelPackData(SPINEL_FRAME_PACK_CMD_PROP_VALUE_GET, SPINEL_PROP_THREAD_PENDING_DATASET)
-			)
-			.set_reply_unpacker(boost::bind(&SpinelNCPInstance::unpack_and_set_local_dataset, this, _1, _2))
-			.finish()
-		);
+		get_spinel_prop_with_unpacker(
+			boost::bind(cb, _1),
+			SPINEL_PROP_THREAD_PENDING_DATASET,
+			boost::bind(&SpinelNCPInstance::unpack_and_set_local_dataset, this, _1, _2));
 
 	} else if (strcaseequal(command.c_str(), kWPANTUNDDatasetCommand_SetPending)) {
 		Data frame;
 		mLocalDataset.convert_to_spinel_frame(frame);
-		start_new_task(SpinelNCPTaskSendCommand::Factory(this)
-			.set_callback(cb)
-			.add_command(
-				SpinelPackData(
-					SPINEL_FRAME_PACK_CMD_PROP_VALUE_SET(SPINEL_DATATYPE_DATA_S),
-					SPINEL_PROP_THREAD_PENDING_DATASET,
-					frame.data(),
-					frame.size()
-				)
-			)
-			.finish()
-		);
+		set_spinel_prop(frame, cb, SPINEL_PROP_THREAD_PENDING_DATASET, SPINEL_DATATYPE_DATA_C);
 
 	} else if (strcaseequal(command.c_str(), kWPANTUNDDatasetCommand_SendMgmtGetPending)) {
 		Data frame;
 		mLocalDataset.convert_to_spinel_frame(frame, /* include_values */ false);
-		start_new_task(SpinelNCPTaskSendCommand::Factory(this)
-			.set_callback(cb)
-			.add_command(
-				SpinelPackData(
-					SPINEL_FRAME_PACK_CMD_PROP_VALUE_SET(SPINEL_DATATYPE_DATA_S),
-					SPINEL_PROP_THREAD_MGMT_GET_PENDING_DATASET,
-					frame.data(),
-					frame.size()
-				)
-			)
-			.finish()
-		);
+		set_spinel_prop(frame, cb, SPINEL_PROP_THREAD_MGMT_GET_PENDING_DATASET, SPINEL_DATATYPE_DATA_C);
 
 	} else if (strcaseequal(command.c_str(), kWPANTUNDDatasetCommand_SendMgmtSetPending)) {
 		Data frame;
 		mLocalDataset.convert_to_spinel_frame(frame);
-		start_new_task(SpinelNCPTaskSendCommand::Factory(this)
-			.set_callback(cb)
-			.add_command(
-				SpinelPackData(
-					SPINEL_FRAME_PACK_CMD_PROP_VALUE_SET(SPINEL_DATATYPE_DATA_S),
-					SPINEL_PROP_THREAD_MGMT_SET_PENDING_DATASET,
-					frame.data(),
-					frame.size()
-				)
-			)
-			.finish()
-		);
+		set_spinel_prop(frame, cb, SPINEL_PROP_THREAD_MGMT_SET_PENDING_DATASET, SPINEL_DATATYPE_DATA_C);
 
 	} else {
 		cb(kWPANTUNDStatus_InvalidArgument);
