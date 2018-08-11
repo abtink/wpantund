@@ -257,18 +257,40 @@ private:
 	void get_prop_DaemonTickleOnHostDidWake(CallbackWithStatusArg1 cb);
 
 private:
+	typedef boost::function<int(const boost::any&, boost::any&)> ValueConverter;
+
 	void set_spinel_prop(const boost::any &value, CallbackWithStatus cb, spinel_prop_key_t prop_key, char pack_type,
 			unsigned int capability = 0, bool save_in_settings = false, const std::string &prop_name = std::string());
 
-	void register_set_handler(const char *prop_name, PropUpdateHandler handler);
-	void register_set_handler_spinel(const char *prop_name, spinel_prop_key_t prop_key, char pack_type);
-	void register_set_handler_spinel_persist(const char *prop_name, spinel_prop_key_t prop_key, char pack_type);
+	static void convert_value_prop_set(const boost::any &value, CallbackWithStatus cb, const std::string &prop_name,
+			ValueConverter converter, PropUpdateHandler handler);
+
+	void register_set_handler(const char *prop_name, PropUpdateHandler handler,
+			ValueConverter converter = ValueConverter());
+	void register_set_handler_spinel(const char *prop_name, spinel_prop_key_t prop_key, char pack_type,
+			ValueConverter converter = ValueConverter());
+	void register_set_handler_spinel_persist(const char *prop_name, spinel_prop_key_t prop_key, char pack_type,
+			ValueConverter converter = ValueConverter());
 	void register_set_handler_capability_spinel(const char *prop_name, unsigned int capability,
-			spinel_prop_key_t prop_key, char pack_type);
+			spinel_prop_key_t prop_key, char pack_type, ValueConverter converter = ValueConverter());
 	void register_set_handler_capability_spinel_persist(const char *prop_name, unsigned int capability,
-			spinel_prop_key_t prop_key, char pack_type);
+			spinel_prop_key_t prop_key, char pack_type, ValueConverter converter = ValueConverter());
 
 	void regsiter_all_set_handlers(void);
+
+	static int convert_value_NCPMCUPowerState(const boost::any &value, boost::any &value_out);
+	static int convert_value_channel_mask(const boost::any &value, boost::any &value_out);
+	static int convert_value_CommissionerState(const boost::any &value, boost::any &value_out);
+
+	void set_prop_NetworkKey(const boost::any &value, CallbackWithStatus cb);
+	void set_prop_InterfaceUp(const boost::any &value, CallbackWithStatus cb);
+	void set_prop_NetworkXPANID(const boost::any &value, CallbackWithStatus cb);
+	void set_prop_IPv6MeshLocalPrefix(const boost::any &value, CallbackWithStatus cb);
+	void set_prop_ThreadConfigFilterRLOCAddresses(const boost::any &value, CallbackWithStatus cb);
+	void set_prop_OpenThreadSteeringDataSetWhenJoinable(const boost::any &value, CallbackWithStatus cb);
+	void set_prop_OpenThreadSteeringDataAddress(const boost::any &value, CallbackWithStatus cb);
+	void set_prop_TmfProxyStream(const boost::any &value, CallbackWithStatus cb);
+	void set_prop_UdpProxyStream(const boost::any &value, CallbackWithStatus cb);
 
 public:
 

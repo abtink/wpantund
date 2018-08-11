@@ -601,25 +601,7 @@ convert_rloc16_to_router_id(CallbackWithStatusArg1 cb, int status, const boost::
 	cb(status, router_id);
 }
 
-static int
-convert_string_to_commissioner_state(const char *str, uint8_t &spinel_state)
-{
-	int ret = kWPANTUNDStatus_Ok;
 
-	if (strcaseequal(str, kWPANTUNDCommissionerState_Disabled) || strcaseequal(str, "stop") || strcaseequal(str, "off")
-		|| strcaseequal(str, "0") || strcaseequal(str, "false")) {
-		spinel_state = SPINEL_MESHCOP_COMMISSIONER_STATE_DISABLED;
-
-	} else if (strcaseequal(str, kWPANTUNDCommissionerState_Active) || strcaseequal(str, "start") ||
-		strcaseequal(str, "on") || strcaseequal(str, "1") || strcaseequal(str, "true")) {
-		spinel_state = SPINEL_MESHCOP_COMMISSIONER_STATE_ACTIVE;
-
-	} else {
-		ret = kWPANTUNDStatus_InvalidArgument;
-	}
-
-	return ret;
-}
 
 static int
 unpack_commissioner_state(const uint8_t *data_in, spinel_size_t data_len, boost::any& value)
@@ -690,22 +672,6 @@ unpack_channel_mask(const uint8_t *data_in, spinel_size_t data_len, boost::any& 
 	}
 
 	return ret;
-}
-
-static Data
-convert_channel_mask_to_array(uint32_t channel_mask)
-{
-	Data mask_array(32);
-
-	mask_array.clear();
-
-	for (uint8_t channel = 0; channel < 32; channel++) {
-		if (channel_mask & (1U << channel)) {
-			mask_array.push_back(channel);
-		}
-	}
-
-	return mask_array;
 }
 
 static int
@@ -1040,27 +1006,6 @@ unpack_mcu_power_state(const uint8_t *data_in, spinel_size_t data_len, boost::an
 	}
 
 bail:
-	return ret;
-}
-
-static int
-convert_string_to_spinel_mcu_power_state(const char *str, spinel_mcu_power_state_t &power_state)
-{
-	int ret = kWPANTUNDStatus_Ok;
-
-	if (strcaseequal(str, kWPANTUNDNCPMCUPowerState_On)) {
-		power_state = SPINEL_MCU_POWER_STATE_ON;
-
-	} else if (strcaseequal(str, kWPANTUNDNCPMCUPowerState_LowPower) || strcaseequal(str, "lp")) {
-		power_state = SPINEL_MCU_POWER_STATE_LOW_POWER;
-
-	} else if (strcaseequal(str, "kWPANTUNDNCPMCUPowerState_Off")) {
-		power_state = SPINEL_MCU_POWER_STATE_OFF;
-
-	} else {
-		ret = kWPANTUNDStatus_InvalidArgument;
-	}
-
 	return ret;
 }
 
@@ -2630,8 +2575,6 @@ SpinelNCPInstance::property_get_value(
 // ----------------------------------------------------------------------------
 // MARK: Property Set Handlers
 
-typedef boost::function<nl::Data(const boost::any &value)> CommandGenerator;
-
 int spinel_append_any(Data &frame, const boost::any &value, char pack_type)
 {
 	int ret = kWPANTUNDStatus_Ok;
@@ -2708,12 +2651,6 @@ int spinel_append_any(Data &frame, const boost::any &value, char pack_type)
 	return ret;
 }
 
-int generate_command_spinel_set_prop(Data &command, const boost::any &value, spinel_prop_key_t prop_key, char pack_type)
-{
-	command = SpinelPackData(SPINEL_FRAME_PACK_CMD_PROP_VALUE_SET(SPINEL_DATATYPE_NULL_S), prop_key);
-	return spinel_append_any(command, value, pack_type);
-}
-
 void
 SpinelNCPInstance::set_spinel_prop(
 	const boost::any &value, CallbackWithStatus cb, spinel_prop_key_t prop_key, char pack_type, unsigned int capability,
@@ -2749,44 +2686,73 @@ syslog(LOG_INFO, "ABTIN =============> set_spinel_prop: %s, %s, %c, %s, %d ",
 }
 
 void
-SpinelNCPInstance::register_set_handler(const char *prop_name, PropUpdateHandler handler)
+SpinelNCPInstance::convert_value_prop_set(const boost::any &value, CallbackWithStatus cb, const std::string &prop_name,
+	ValueConverter converter, PropUpdateHandler handler)
 {
-	NCPInstanceBase::register_prop_set_handler(prop_name, handler);
+	boost::any converted_value;
+	int status = converter(value, converted_value);
+
+	if (status == kWPANTUNDStatus_Ok) {
+		handler(converted_value, cb, prop_name);
+	} else {
+		cb(status);
+	}
 }
 
 void
-SpinelNCPInstance::register_set_handler_spinel(const char *prop_name, spinel_prop_key_t prop_key, char pack_type)
+SpinelNCPInstance::register_set_handler(const char *prop_name, PropUpdateHandler handler, ValueConverter converter)
+{
+	if (converter.empty()) {
+		NCPInstanceBase::register_prop_set_handler(prop_name, handler);
+	} else {
+
+		// If a `converter` function is given, use `convert_value_prop_set`
+		// which converts the value using the `converter` then passing the
+		// converted value to the original `handler`.
+		NCPInstanceBase::register_prop_set_handler(
+			prop_name,
+			boost::bind(&SpinelNCPInstance::convert_value_prop_set, _1, _2, _3, converter, handler));
+	}
+}
+
+void
+SpinelNCPInstance::register_set_handler_spinel(const char *prop_name, spinel_prop_key_t prop_key, char pack_type,
+	ValueConverter converter)
 {
 	register_set_handler(
 		prop_name,
-		boost::bind(&SpinelNCPInstance::set_spinel_prop, this, _1, _2, prop_key, pack_type, 0, false, _3));
+		boost::bind(&SpinelNCPInstance::set_spinel_prop, this, _1, _2, prop_key, pack_type, 0, false, _3),
+		converter);
 }
 
 void
 SpinelNCPInstance::register_set_handler_spinel_persist(const char *prop_name, spinel_prop_key_t prop_key,
-	char pack_type)
+	char pack_type, ValueConverter converter)
 {
 	register_set_handler(
 		prop_name,
-		boost::bind(&SpinelNCPInstance::set_spinel_prop, this, _1, _2, prop_key, pack_type, 0, true, _3));
+		boost::bind(&SpinelNCPInstance::set_spinel_prop, this, _1, _2, prop_key, pack_type, 0, true, _3),
+		converter);
 }
 
 void
 SpinelNCPInstance::register_set_handler_capability_spinel(const char *prop_name, unsigned int capability,
-	spinel_prop_key_t prop_key, char pack_type)
+	spinel_prop_key_t prop_key, char pack_type, ValueConverter converter)
 {
 	register_set_handler(
 		prop_name,
-		boost::bind(&SpinelNCPInstance::set_spinel_prop, this, _1, _2, prop_key, pack_type, capability, false, _3));
+		boost::bind(&SpinelNCPInstance::set_spinel_prop, this, _1, _2, prop_key, pack_type, capability, false, _3),
+		converter);
 }
 
 void
 SpinelNCPInstance::register_set_handler_capability_spinel_persist(const char *prop_name, unsigned int capability,
-	spinel_prop_key_t prop_key, char pack_type)
+	spinel_prop_key_t prop_key, char pack_type, ValueConverter converter)
 {
 	register_set_handler(
 		prop_name,
-		boost::bind(&SpinelNCPInstance::set_spinel_prop, this, _1, _2, prop_key, pack_type, capability, true, _3));
+		boost::bind(&SpinelNCPInstance::set_spinel_prop, this, _1, _2, prop_key, pack_type, capability, true, _3),
+		converter);
 }
 
 void
@@ -2816,6 +2782,11 @@ SpinelNCPInstance::regsiter_all_set_handlers(void)
 	register_set_handler_spinel_persist(kWPANTUNDProperty_NCPTXPower, SPINEL_PROP_PHY_TX_POWER, SPINEL_DATATYPE_INT8_C);
 	register_set_handler_spinel_persist(kWPANTUNDProperty_ThreadChildTimeout, SPINEL_PROP_THREAD_CHILD_TIMEOUT, SPINEL_DATATYPE_UINT32_C);
 	register_set_handler_spinel_persist(kWPANTUNDProperty_ThreadDeviceMode, SPINEL_PROP_THREAD_MODE, SPINEL_DATATYPE_UINT8_C);
+	register_set_handler_spinel_persist(kWPANTUNDProperty_OpenThreadLogLevel, SPINEL_PROP_DEBUG_NCP_LOG_LEVEL, SPINEL_DATATYPE_UINT8_C);
+
+	register_set_handler_spinel_persist(kWPANTUNDProperty_NCPChannelMask, SPINEL_PROP_PHY_CHAN_SUPPORTED, SPINEL_DATATYPE_DATA_C,
+		&SpinelNCPInstance::convert_value_channel_mask);
+
 
 
 	// Properties requiring capability check and associated with a spinel property
@@ -2824,6 +2795,19 @@ SpinelNCPInstance::regsiter_all_set_handlers(void)
 		SPINEL_PROP_MAC_WHITELIST_ENABLED, SPINEL_DATATYPE_BOOL_C);
 	register_set_handler_capability_spinel(kWPANTUNDProperty_MACBlacklistEnabled, SPINEL_CAP_MAC_WHITELIST,
 		SPINEL_PROP_MAC_BLACKLIST_ENABLED, SPINEL_DATATYPE_BOOL_C);
+	register_set_handler_capability_spinel(kWPANTUNDProperty_CommissionerProvisioningUrl, SPINEL_CAP_THREAD_COMMISSIONER,
+		SPINEL_PROP_MESHCOP_COMMISSIONER_PROVISIONING_URL, SPINEL_DATATYPE_UTF8_C);
+	register_set_handler_capability_spinel(kWPANTUNDProperty_CommissionerSendMgmtGet, SPINEL_CAP_THREAD_COMMISSIONER,
+		SPINEL_PROP_MESHCOP_COMMISSIONER_MGMT_GET, SPINEL_DATATYPE_DATA_WLEN_C);
+	register_set_handler_capability_spinel(kWPANTUNDProperty_CommissionerSendMgmtSet, SPINEL_CAP_THREAD_COMMISSIONER,
+		SPINEL_PROP_MESHCOP_COMMISSIONER_MGMT_SET, SPINEL_DATATYPE_DATA_WLEN_C);
+	register_set_handler_capability_spinel(kWPANTUNDProperty_ChannelManagerChannelSelect, SPINEL_CAP_CHANNEL_MANAGER,
+		SPINEL_PROP_CHANNEL_MANAGER_CHANNEL_SELECT, SPINEL_DATATYPE_BOOL_C);
+
+	register_set_handler_capability_spinel(kWPANTUNDProperty_CommissionerState, SPINEL_CAP_THREAD_COMMISSIONER,
+		SPINEL_PROP_MESHCOP_COMMISSIONER_STATE, SPINEL_DATATYPE_UINT8_C,
+		&SpinelNCPInstance::convert_value_CommissionerState);
+
 
 
 	// Properties requiring capability check and persistence (saving in settings), and associated with a spinel property
@@ -2842,11 +2826,313 @@ SpinelNCPInstance::regsiter_all_set_handlers(void)
 		SPINEL_PROP_JAM_DETECT_BUSY, SPINEL_DATATYPE_UINT8_C);
 	register_set_handler_capability_spinel_persist(kWPANTUNDProperty_NestLabs_LegacyMeshLocalPrefix, SPINEL_CAP_NEST_LEGACY_INTERFACE,
 		SPINEL_PROP_NEST_LEGACY_ULA_PREFIX, SPINEL_DATATYPE_DATA_C);
+	register_set_handler_capability_spinel_persist(kWPANTUNDProperty_ChildSupervisionInterval, SPINEL_CAP_CHILD_SUPERVISION,
+		SPINEL_PROP_CHILD_SUPERVISION_INTERVAL, SPINEL_DATATYPE_UINT16_C);
+	register_set_handler_capability_spinel_persist(kWPANTUNDProperty_ChildSupervisionCheckTimeout, SPINEL_CAP_CHILD_SUPERVISION,
+		SPINEL_PROP_CHILD_SUPERVISION_CHECK_TIMEOUT, SPINEL_DATATYPE_UINT16_C);
+	register_set_handler_capability_spinel_persist(kWPANTUNDProperty_ChannelManagerNewChannel, SPINEL_CAP_CHANNEL_MANAGER,
+		SPINEL_PROP_CHANNEL_MANAGER_NEW_CHANNEL, SPINEL_DATATYPE_UINT8_C);
+	register_set_handler_capability_spinel_persist(kWPANTUNDProperty_ChannelManagerDelay, SPINEL_CAP_CHANNEL_MANAGER,
+		SPINEL_PROP_CHANNEL_MANAGER_DELAY, SPINEL_DATATYPE_UINT16_C);
+	register_set_handler_capability_spinel_persist(kWPANTUNDProperty_ChannelManagerAutoSelectEnabled, SPINEL_CAP_CHANNEL_MANAGER,
+		SPINEL_PROP_CHANNEL_MANAGER_AUTO_SELECT_ENABLED, SPINEL_DATATYPE_BOOL_C);
+	register_set_handler_capability_spinel_persist(kWPANTUNDProperty_ChannelManagerAutoSelectInterval, SPINEL_CAP_CHANNEL_MANAGER,
+		SPINEL_PROP_CHANNEL_MANAGER_AUTO_SELECT_INTERVAL, SPINEL_DATATYPE_UINT32_C);
 
+
+	register_set_handler_capability_spinel_persist(kWPANTUNDProperty_NCPMCUPowerState, SPINEL_PROP_MCU_POWER_STATE,
+		SPINEL_PROP_MCU_POWER_STATE, SPINEL_DATATYPE_UINT8_C,
+		&SpinelNCPInstance::convert_value_NCPMCUPowerState);
+	register_set_handler_capability_spinel_persist(kWPANTUNDProperty_ChannelManagerSupportedChannelMask, SPINEL_CAP_CHANNEL_MANAGER,
+		SPINEL_PROP_CHANNEL_MANAGER_SUPPORTED_CHANNELS, SPINEL_DATATYPE_DATA_C,
+		&SpinelNCPInstance::convert_value_channel_mask);
+	register_set_handler_capability_spinel_persist(kWPANTUNDProperty_ChannelManagerFavoredChannelMask, SPINEL_CAP_CHANNEL_MANAGER,
+		SPINEL_PROP_CHANNEL_MANAGER_FAVORED_CHANNELS, SPINEL_DATATYPE_DATA_C,
+		&SpinelNCPInstance::convert_value_channel_mask);
 
 	// Properties with a dedicated handler method.
 
+	register_set_handler(kWPANTUNDProperty_NetworkKey,
+		boost::bind(&SpinelNCPInstance::set_prop_NetworkKey, this, _1, _2));
+	register_set_handler(kWPANTUNDProperty_InterfaceUp,
+		boost::bind(&SpinelNCPInstance::set_prop_InterfaceUp, this, _1, _2));
+	register_set_handler(kWPANTUNDProperty_NetworkXPANID,
+		boost::bind(&SpinelNCPInstance::set_prop_NetworkXPANID, this, _1, _2));
+	register_set_handler(kWPANTUNDProperty_IPv6MeshLocalPrefix,
+		boost::bind(&SpinelNCPInstance::set_prop_IPv6MeshLocalPrefix, this, _1, _2));
+	register_set_handler(kWPANTUNDProperty_ThreadConfigFilterRLOCAddresses,
+		boost::bind(&SpinelNCPInstance::set_prop_ThreadConfigFilterRLOCAddresses, this, _1, _2));
+	register_set_handler(kWPANTUNDProperty_OpenThreadSteeringDataSetWhenJoinable,
+		boost::bind(&SpinelNCPInstance::set_prop_OpenThreadSteeringDataSetWhenJoinable, this, _1, _2));
+	register_set_handler(kWPANTUNDProperty_OpenThreadSteeringDataAddress,
+		boost::bind(&SpinelNCPInstance::set_prop_OpenThreadSteeringDataAddress, this, _1, _2));
+	register_set_handler(kWPANTUNDProperty_TmfProxyStream,
+		boost::bind(&SpinelNCPInstance::set_prop_TmfProxyStream, this, _1, _2));
+	register_set_handler(kWPANTUNDProperty_UdpProxyStream,
+		boost::bind(&SpinelNCPInstance::set_prop_UdpProxyStream, this, _1, _2));
 }
+
+int
+SpinelNCPInstance::convert_value_NCPMCUPowerState(const boost::any &value, boost::any &value_out)
+{
+	int ret = kWPANTUNDStatus_Ok;
+	std::string str = any_to_string(value);
+
+	if (strcaseequal(str.c_str(), kWPANTUNDNCPMCUPowerState_On)) {
+		value_out = static_cast<uint8_t>(SPINEL_MCU_POWER_STATE_ON);
+	} else if (strcaseequal(str.c_str(), kWPANTUNDNCPMCUPowerState_LowPower) || strcaseequal(str.c_str(), "lp")) {
+		value_out = static_cast<uint8_t>(SPINEL_MCU_POWER_STATE_LOW_POWER);
+	} else if (strcaseequal(str.c_str(), "kWPANTUNDNCPMCUPowerState_Off")) {
+		value_out = static_cast<uint8_t>(SPINEL_MCU_POWER_STATE_OFF);
+	} else {
+		ret = kWPANTUNDStatus_InvalidArgument;
+	}
+
+	return ret;
+}
+
+//#$%!@^&!%&^!%@&^!%@&^!%@&!^% REMOVE THIS
+static
+Data convert_channel_mask_to_array(uint32_t mask)
+{
+	return Data();
+}
+
+int
+SpinelNCPInstance::convert_value_channel_mask(const boost::any &value, boost::any &value_out)
+{
+	uint32_t channel_mask = any_to_int(value);
+	Data mask_array(32);
+
+	mask_array.clear();
+	for (uint8_t channel = 0; channel < 32; channel++) {
+		if (channel_mask & (1U << channel)) {
+			mask_array.push_back(channel);
+		}
+	}
+
+	value_out = mask_array;
+	return kWPANTUNDStatus_Ok;
+}
+
+int
+SpinelNCPInstance::convert_value_CommissionerState(const boost::any &value, boost::any &value_out)
+{
+	int ret = kWPANTUNDStatus_Ok;
+	std::string state_str = any_to_string(value);
+	const char *str = state_str.c_str();
+
+	if (strcaseequal(str, kWPANTUNDCommissionerState_Disabled) || strcaseequal(str, "stop") || strcaseequal(str, "off")
+		|| strcaseequal(str, "0") || strcaseequal(str, "false")
+	) {
+		value_out = static_cast<uint8_t>(SPINEL_MESHCOP_COMMISSIONER_STATE_DISABLED);
+
+	} else if (strcaseequal(str, kWPANTUNDCommissionerState_Active) || strcaseequal(str, "start") ||
+		strcaseequal(str, "on") || strcaseequal(str, "1") || strcaseequal(str, "true")
+	) {
+		value_out = static_cast<uint8_t>(SPINEL_MESHCOP_COMMISSIONER_STATE_ACTIVE);
+
+	} else {
+		ret = kWPANTUNDStatus_InvalidArgument;
+	}
+
+	return ret;
+}
+
+void
+SpinelNCPInstance::set_prop_NetworkKey(const boost::any &value, CallbackWithStatus cb)
+{
+	Data network_key = any_to_data(value);
+
+	if (!ncp_state_is_joining_or_joined(get_ncp_state())) {
+		mNetworkKey = network_key;
+		if (mNetworkKeyIndex == 0) {
+			mNetworkKeyIndex = 1;
+		}
+	}
+
+	if (get_ncp_state() == CREDENTIALS_NEEDED) {
+		ValueMap options;
+		options[kWPANTUNDProperty_NetworkKey] = value;
+		start_new_task(boost::shared_ptr<SpinelNCPTask>(
+			new SpinelNCPTaskJoin(
+				this,
+				boost::bind(cb,_1),
+				options
+			)
+		));
+	} else {
+		set_spinel_prop(value, cb, SPINEL_PROP_NET_MASTER_KEY, SPINEL_DATATYPE_DATA_C);
+	}
+}
+
+void
+SpinelNCPInstance::set_prop_InterfaceUp(const boost::any &value, CallbackWithStatus cb)
+{
+	bool isup = any_to_bool(value);
+
+	if (isup) {
+		start_new_task(SpinelNCPTaskSendCommand::Factory(this)
+			.set_callback(cb)
+			.add_command(SpinelPackData(
+				SPINEL_FRAME_PACK_CMD_PROP_VALUE_SET(SPINEL_DATATYPE_BOOL_S),
+				SPINEL_PROP_NET_IF_UP,
+				true
+			))
+			.add_command(SpinelPackData(
+				SPINEL_FRAME_PACK_CMD_PROP_VALUE_SET(SPINEL_DATATYPE_BOOL_S),
+				SPINEL_PROP_NET_STACK_UP,
+				true
+			))
+			.finish()
+		);
+	} else {
+		start_new_task(SpinelNCPTaskSendCommand::Factory(this)
+			.set_callback(cb)
+			.add_command(SpinelPackData(
+				SPINEL_FRAME_PACK_CMD_PROP_VALUE_SET(SPINEL_DATATYPE_BOOL_S),
+				SPINEL_PROP_NET_STACK_UP,
+				false
+			))
+			.add_command(SpinelPackData(
+				SPINEL_FRAME_PACK_CMD_PROP_VALUE_SET(SPINEL_DATATYPE_BOOL_S),
+				SPINEL_PROP_NET_IF_UP,
+				false
+			))
+			.finish()
+		);
+	}
+}
+
+void
+SpinelNCPInstance::set_prop_NetworkXPANID(const boost::any &value, CallbackWithStatus cb)
+{
+	mXPANIDWasExplicitlySet = true;
+	set_spinel_prop(value, cb, SPINEL_PROP_NET_XPANID, SPINEL_DATATYPE_DATA_C);
+}
+
+void
+SpinelNCPInstance::set_prop_IPv6MeshLocalPrefix(const boost::any &value, CallbackWithStatus cb)
+{
+	struct in6_addr addr = any_to_ipv6(value);
+
+	start_new_task(SpinelNCPTaskSendCommand::Factory(this)
+		.set_callback(cb)
+		.add_command(SpinelPackData(
+			SPINEL_FRAME_PACK_CMD_PROP_VALUE_SET(SPINEL_DATATYPE_IPv6ADDR_S SPINEL_DATATYPE_UINT8_S),
+			SPINEL_PROP_IPV6_ML_PREFIX,
+			&addr,
+			64
+		))
+		.finish()
+	);
+}
+
+void
+SpinelNCPInstance::set_prop_ThreadConfigFilterRLOCAddresses(const boost::any &value, CallbackWithStatus cb)
+{
+	mFilterRLOCAddresses = any_to_bool(value);
+	cb(kWPANTUNDStatus_Ok);
+}
+
+void
+SpinelNCPInstance::set_prop_OpenThreadSteeringDataSetWhenJoinable(const boost::any &value, CallbackWithStatus cb)
+{
+	mSetSteeringDataWhenJoinable = any_to_bool(value);
+	cb(kWPANTUNDStatus_Ok);
+}
+
+void
+SpinelNCPInstance::set_prop_OpenThreadSteeringDataAddress(const boost::any &value, CallbackWithStatus cb)
+{
+	Data address = any_to_data(value);
+	wpantund_status_t status = kWPANTUNDStatus_Ok;
+
+	if (address.size() != sizeof(mSteeringDataAddress)) {
+		status = kWPANTUNDStatus_InvalidArgument;
+	} else {
+		memcpy(mSteeringDataAddress, address.data(), sizeof(mSteeringDataAddress));
+	}
+
+	cb (status);
+}
+
+void
+SpinelNCPInstance::set_prop_TmfProxyStream(const boost::any &value, CallbackWithStatus cb)
+{
+	Data packet = any_to_data(value);
+
+	if (packet.size() > sizeof(uint16_t)*2) {
+		uint16_t port = (packet[packet.size() - sizeof(port)] << 8 | packet[packet.size() - sizeof(port) + 1]);
+		uint16_t locator = (packet[packet.size() - sizeof(locator) - sizeof(port)] << 8 |
+				packet[packet.size() - sizeof(locator) - sizeof(port) + 1]);
+
+		packet.resize(packet.size() - sizeof(locator) - sizeof(port));
+
+		Data command = SpinelPackData(
+			SPINEL_FRAME_PACK_CMD_PROP_VALUE_SET(
+				SPINEL_DATATYPE_DATA_WLEN_S
+				SPINEL_DATATYPE_UINT16_S
+				SPINEL_DATATYPE_UINT16_S
+			),
+			SPINEL_PROP_THREAD_TMF_PROXY_STREAM,
+			packet.data(),
+			packet.size(),
+			locator,
+			port
+		);
+
+		start_new_task(SpinelNCPTaskSendCommand::Factory(this)
+			.set_callback(cb)
+			.add_command(command)
+			.finish()
+		);
+	} else {
+		cb(kWPANTUNDStatus_InvalidArgument);
+	}
+}
+
+void
+SpinelNCPInstance::set_prop_UdpProxyStream(const boost::any &value, CallbackWithStatus cb)
+{
+	Data packet = any_to_data(value);
+
+	if (packet.size() > sizeof(uint16_t) * 2 + sizeof(in6_addr)) {
+		in6_addr peer_addr;
+		const size_t payload_len = packet.size() - sizeof(uint16_t) * 2 - sizeof(struct in6_addr);
+		size_t i = payload_len;
+		const uint16_t peer_port = (packet[i] << 8 | packet[i + 1]);
+		i += sizeof(uint16_t);
+		memcpy(peer_addr.s6_addr, &packet[i], sizeof(peer_addr));
+		i += sizeof(peer_addr);
+		const uint16_t sock_port = (packet[i] << 8 | packet[i + 1]);
+
+		Data command = SpinelPackData(
+			SPINEL_FRAME_PACK_CMD_PROP_VALUE_SET(
+				SPINEL_DATATYPE_DATA_WLEN_S
+				SPINEL_DATATYPE_UINT16_S    // Peer port
+				SPINEL_DATATYPE_IPv6ADDR_S  // Peer address
+				SPINEL_DATATYPE_UINT16_S    // Sock port
+			),
+			SPINEL_PROP_THREAD_UDP_PROXY_STREAM,
+			packet.data(),
+			payload_len,
+			peer_port,
+			&peer_addr,
+			sock_port
+		);
+
+		start_new_task(SpinelNCPTaskSendCommand::Factory(this)
+			.set_callback(cb)
+			.add_command(command)
+			.finish()
+		);
+	} else {
+		cb(kWPANTUNDStatus_InvalidArgument);
+	}
+}
+
+
 
 
 
@@ -2874,502 +3160,22 @@ SpinelNCPInstance::property_set_value(
 
 
 
-		} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_NCPMCUPowerState)) {
-			spinel_mcu_power_state_t power_state;
-			int ret = convert_string_to_spinel_mcu_power_state(any_to_string(value).c_str(), power_state);
-
-			if (ret != kWPANTUNDStatus_Ok) {
-				cb(ret);
-			} else {
-				Data command = SpinelPackData(SPINEL_FRAME_PACK_CMD_PROP_VALUE_SET(SPINEL_DATATYPE_UINT8_S), SPINEL_PROP_MCU_POWER_STATE, power_state);
-
-				mSettings[kWPANTUNDProperty_NCPMCUPowerState] = SettingsEntry(command, SPINEL_CAP_MCU_POWER_STATE);
-
-				if (!mCapabilities.count(SPINEL_CAP_MCU_POWER_STATE))
-				{
-					cb(kWPANTUNDStatus_FeatureNotSupported);
-				} else {
-					start_new_task(SpinelNCPTaskSendCommand::Factory(this)
-						.set_callback(cb)
-						.add_command(command)
-						.finish()
-					);
-				}
-			}
-
-		} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_NCPChannelMask)) {
-			uint32_t mask = any_to_int(value);
-			Data mask_array = convert_channel_mask_to_array(mask);
-			Data command = SpinelPackData(
-				SPINEL_FRAME_PACK_CMD_PROP_VALUE_SET(SPINEL_DATATYPE_DATA_S),
-				SPINEL_PROP_PHY_CHAN_SUPPORTED,
-				mask_array.data(),
-				mask_array.size()
-			);
-
-			mSettings[kWPANTUNDProperty_NCPChannelMask] = SettingsEntry(command);
-
-			start_new_task(SpinelNCPTaskSendCommand::Factory(this)
-				.set_callback(cb)
-				.add_command(command)
-				.finish()
-			);
-
-
-		} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_NetworkKey)) {
-			Data network_key = any_to_data(value);
-
-			if (!ncp_state_is_joining_or_joined(get_ncp_state())) {
-				mNetworkKey = network_key;
-				if (mNetworkKeyIndex == 0) {
-					mNetworkKeyIndex = 1;
-				}
-			}
-
-			if (get_ncp_state() == CREDENTIALS_NEEDED) {
-				ValueMap options;
-				options[kWPANTUNDProperty_NetworkKey] = value;
-				start_new_task(boost::shared_ptr<SpinelNCPTask>(
-					new SpinelNCPTaskJoin(
-						this,
-						boost::bind(cb,_1),
-						options
-					)
-				));
-			} else {
-				start_new_task(SpinelNCPTaskSendCommand::Factory(this)
-					.set_callback(cb)
-					.add_command(
-						SpinelPackData(SPINEL_FRAME_PACK_CMD_PROP_VALUE_SET(SPINEL_DATATYPE_DATA_S), SPINEL_PROP_NET_MASTER_KEY, network_key.data(), network_key.size())
-					)
-					.finish()
-				);
-			}
-
-
-		} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_InterfaceUp)) {
-			bool isup = any_to_bool(value);
-			if (isup) {
-				start_new_task(SpinelNCPTaskSendCommand::Factory(this)
-					.set_callback(cb)
-					.add_command(SpinelPackData(
-						SPINEL_FRAME_PACK_CMD_PROP_VALUE_SET(SPINEL_DATATYPE_BOOL_S),
-						SPINEL_PROP_NET_IF_UP,
-						true
-					))
-					.add_command(SpinelPackData(
-						SPINEL_FRAME_PACK_CMD_PROP_VALUE_SET(SPINEL_DATATYPE_BOOL_S),
-						SPINEL_PROP_NET_STACK_UP,
-						true
-					))
-					.finish()
-				);
-			} else {
-				start_new_task(SpinelNCPTaskSendCommand::Factory(this)
-					.set_callback(cb)
-					.add_command(SpinelPackData(
-						SPINEL_FRAME_PACK_CMD_PROP_VALUE_SET(SPINEL_DATATYPE_BOOL_S),
-						SPINEL_PROP_NET_STACK_UP,
-						false
-					))
-					.add_command(SpinelPackData(
-						SPINEL_FRAME_PACK_CMD_PROP_VALUE_SET(SPINEL_DATATYPE_BOOL_S),
-						SPINEL_PROP_NET_IF_UP,
-						false
-					))
-					.finish()
-				);
-			}
-
-		} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_NetworkXPANID)) {
-			set_spinel_prop(value, cb, SPINEL_PROP_NET_XPANID, SPINEL_DATATYPE_DATA_C);
-			mXPANIDWasExplicitlySet = true;
-
-
-		} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_IPv6MeshLocalPrefix)) {
-			struct in6_addr addr = any_to_ipv6(value);
-
-			Data command =
-				SpinelPackData(
-					SPINEL_FRAME_PACK_CMD_PROP_VALUE_SET(SPINEL_DATATYPE_IPv6ADDR_S SPINEL_DATATYPE_UINT8_S),
-					SPINEL_PROP_IPV6_ML_PREFIX,
-					&addr,
-					64
-				);
-
-			start_new_task(SpinelNCPTaskSendCommand::Factory(this)
-				.set_callback(cb)
-				.add_command(command)
-				.finish()
-			);
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-		} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_CommissionerState)) {
-			if (!mCapabilities.count(SPINEL_CAP_THREAD_COMMISSIONER)) {
-				cb(kWPANTUNDStatus_FeatureNotSupported);
-			} else {
-				uint8_t spinel_state;
-				int status = convert_string_to_commissioner_state(any_to_string(value).c_str(), spinel_state);
-
-				if (status == kWPANTUNDStatus_Ok) {
-					start_new_task(SpinelNCPTaskSendCommand::Factory(this)
-						.set_callback(cb)
-						.add_command(SpinelPackData(
-							SPINEL_FRAME_PACK_CMD_PROP_VALUE_SET(SPINEL_DATATYPE_UINT8_S),
-							SPINEL_PROP_MESHCOP_COMMISSIONER_STATE,
-							spinel_state
-						))
-						.finish()
-					);
-				} else {
-					cb(status);
-				}
-			}
-
-		} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_CommissionerProvisioningUrl)) {
-			if (!mCapabilities.count(SPINEL_CAP_THREAD_COMMISSIONER)) {
-				cb(kWPANTUNDStatus_FeatureNotSupported);
-			} else {
-				std::string url = any_to_string(value);
-
-				start_new_task(SpinelNCPTaskSendCommand::Factory(this)
-					.set_callback(cb)
-					.add_command(SpinelPackData(
-						SPINEL_FRAME_PACK_CMD_PROP_VALUE_SET(SPINEL_DATATYPE_UTF8_S),
-						SPINEL_PROP_MESHCOP_COMMISSIONER_PROVISIONING_URL,
-						url.c_str()
-					))
-					.finish()
-				);
-			}
-
-		} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_CommissionerSendMgmtGet)) {
-			if (!mCapabilities.count(SPINEL_CAP_THREAD_COMMISSIONER)) {
-				cb(kWPANTUNDStatus_FeatureNotSupported);
-			} else {
-				Data tlvs = any_to_data(value);
-
-				start_new_task(SpinelNCPTaskSendCommand::Factory(this)
-					.set_callback(cb)
-					.add_command(SpinelPackData(
-						SPINEL_FRAME_PACK_CMD_PROP_VALUE_SET(SPINEL_DATATYPE_DATA_WLEN_S),
-						SPINEL_PROP_MESHCOP_COMMISSIONER_MGMT_GET,
-						tlvs.data(),
-						tlvs.size()
-					))
-					.finish()
-				);
-			}
-
-		} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_CommissionerSendMgmtSet)) {
-			if (!mCapabilities.count(SPINEL_CAP_THREAD_COMMISSIONER)) {
-				cb(kWPANTUNDStatus_FeatureNotSupported);
-			} else {
-				Data tlvs = any_to_data(value);
-
-				start_new_task(SpinelNCPTaskSendCommand::Factory(this)
-					.set_callback(cb)
-					.add_command(SpinelPackData(
-						SPINEL_FRAME_PACK_CMD_PROP_VALUE_SET(SPINEL_DATATYPE_DATA_WLEN_S),
-						SPINEL_PROP_MESHCOP_COMMISSIONER_MGMT_SET,
-						tlvs.data(),
-						tlvs.size()
-					))
-					.finish()
-				);
-			}
-
-		} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_OpenThreadLogLevel)) {
-			uint8_t logLevel = static_cast<uint8_t>(any_to_int(value));
-			Data command = SpinelPackData(SPINEL_FRAME_PACK_CMD_PROP_VALUE_SET(SPINEL_DATATYPE_UINT8_S), SPINEL_PROP_DEBUG_NCP_LOG_LEVEL, logLevel);
-
-			mSettings[kWPANTUNDProperty_OpenThreadLogLevel] = SettingsEntry(command);
-
-			start_new_task(SpinelNCPTaskSendCommand::Factory(this)
-				.set_callback(cb)
-				.add_command(command)
-				.finish()
-			);
-
-		} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_ThreadConfigFilterRLOCAddresses)) {
-			mFilterRLOCAddresses = any_to_bool(value);
-			cb(kWPANTUNDStatus_Ok);
-
-		} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_OpenThreadSteeringDataSetWhenJoinable)) {
-			mSetSteeringDataWhenJoinable = any_to_bool(value);
-			cb(kWPANTUNDStatus_Ok);
-
-		} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_OpenThreadSteeringDataAddress)) {
-			Data address = any_to_data(value);
-			wpantund_status_t status = kWPANTUNDStatus_Ok;
-
-			if (address.size() != sizeof(mSteeringDataAddress)) {
-				status = kWPANTUNDStatus_InvalidArgument;
-			} else {
-				memcpy(mSteeringDataAddress, address.data(), sizeof(mSteeringDataAddress));
-			}
-
-			cb (status);
-
-		} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_TmfProxyStream)) {
-			Data packet = any_to_data(value);
-
-			if (packet.size() > sizeof(uint16_t)*2) {
-				uint16_t port = (packet[packet.size() - sizeof(port)] << 8 | packet[packet.size() - sizeof(port) + 1]);
-				uint16_t locator = (packet[packet.size() - sizeof(locator) - sizeof(port)] << 8 |
-						packet[packet.size() - sizeof(locator) - sizeof(port) + 1]);
-
-				packet.resize(packet.size() - sizeof(locator) - sizeof(port));
-
-				Data command = SpinelPackData(SPINEL_FRAME_PACK_CMD_PROP_VALUE_SET(SPINEL_DATATYPE_DATA_WLEN_S SPINEL_DATATYPE_UINT16_S SPINEL_DATATYPE_UINT16_S),
-						SPINEL_PROP_THREAD_TMF_PROXY_STREAM, packet.data(), packet.size(), locator, port);
-
-				start_new_task(SpinelNCPTaskSendCommand::Factory(this)
-						.set_callback(cb)
-						.add_command(command)
-						.finish()
-						);
-			} else {
-				cb(kWPANTUNDStatus_InvalidArgument);
-			}
-
-		} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_UdpProxyStream)) {
-			Data packet = any_to_data(value);
-
-			if (packet.size() > sizeof(uint16_t) * 2 + sizeof(in6_addr)) {
-				in6_addr peer_addr;
-				const size_t payload_len = packet.size() - sizeof(uint16_t) * 2 - sizeof(struct in6_addr);
-				size_t i = payload_len;
-				const uint16_t peer_port = (packet[i] << 8 | packet[i + 1]);
-				i += sizeof(uint16_t);
-				memcpy(peer_addr.s6_addr, &packet[i], sizeof(peer_addr));
-				i += sizeof(peer_addr);
-				const uint16_t sock_port = (packet[i] << 8 | packet[i + 1]);
-
-				Data command = SpinelPackData(
-					SPINEL_FRAME_PACK_CMD_PROP_VALUE_SET(
-						SPINEL_DATATYPE_DATA_WLEN_S
-						SPINEL_DATATYPE_UINT16_S    // Peer port
-						SPINEL_DATATYPE_IPv6ADDR_S  // Peer address
-						SPINEL_DATATYPE_UINT16_S    // Sock port
-					),
-					SPINEL_PROP_THREAD_UDP_PROXY_STREAM,
-					packet.data(),
-					payload_len,
-					peer_port,
-					&peer_addr,
-					sock_port
-				);
-
-				start_new_task(SpinelNCPTaskSendCommand::Factory(this)
-						.set_callback(cb)
-						.add_command(command)
-						.finish()
-						);
-			} else {
-				cb(kWPANTUNDStatus_InvalidArgument);
-			}
-
-		} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_ChildSupervisionInterval)) {
-			uint16_t interval = any_to_int(value);
-			Data command = SpinelPackData(
-				SPINEL_FRAME_PACK_CMD_PROP_VALUE_SET(SPINEL_DATATYPE_UINT16_S),
-				SPINEL_PROP_CHILD_SUPERVISION_INTERVAL,
-				interval
-			);
-
-			mSettings[kWPANTUNDProperty_ChildSupervisionInterval] = SettingsEntry(command, SPINEL_CAP_CHILD_SUPERVISION);
-
-			if (!mCapabilities.count(SPINEL_CAP_CHILD_SUPERVISION)) {
-				cb(kWPANTUNDStatus_FeatureNotSupported);
-			} else {
-				start_new_task(SpinelNCPTaskSendCommand::Factory(this)
-					.set_callback(cb)
-					.add_command(command)
-					.finish()
-				);
-			}
-
-		} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_ChildSupervisionCheckTimeout)) {
-			uint16_t timeout = any_to_int(value);
-			Data command = SpinelPackData(
-				SPINEL_FRAME_PACK_CMD_PROP_VALUE_SET(SPINEL_DATATYPE_UINT16_S),
-				SPINEL_PROP_CHILD_SUPERVISION_CHECK_TIMEOUT,
-				timeout
-			);
-
-			mSettings[kWPANTUNDProperty_ChildSupervisionCheckTimeout] =
-				SettingsEntry(
-					command,
-					SPINEL_CAP_CHILD_SUPERVISION
-				);
-
-			if (!mCapabilities.count(SPINEL_CAP_CHILD_SUPERVISION)) {
-				cb(kWPANTUNDStatus_FeatureNotSupported);
-			} else {
-				start_new_task(SpinelNCPTaskSendCommand::Factory(this)
-					.set_callback(cb)
-					.add_command(command)
-					.finish()
-				);
-			}
-
-		} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_ChannelManagerNewChannel)) {
-			uint8_t channel = any_to_int(value);
-			Data command = SpinelPackData(
-				SPINEL_FRAME_PACK_CMD_PROP_VALUE_SET(SPINEL_DATATYPE_UINT8_S),
-				SPINEL_PROP_CHANNEL_MANAGER_NEW_CHANNEL,
-				channel
-			);
-
-			mSettings[kWPANTUNDProperty_ChannelManagerNewChannel] = SettingsEntry(command, SPINEL_CAP_CHANNEL_MANAGER);
-
-			if (!mCapabilities.count(SPINEL_CAP_CHANNEL_MANAGER)) {
-				cb(kWPANTUNDStatus_FeatureNotSupported);
-			} else {
-				start_new_task(SpinelNCPTaskSendCommand::Factory(this)
-					.set_callback(cb)
-					.add_command(command)
-					.finish()
-				);
-			}
-
-		} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_ChannelManagerDelay)) {
-			uint16_t delay = any_to_int(value);
-			Data command = SpinelPackData(
-				SPINEL_FRAME_PACK_CMD_PROP_VALUE_SET(SPINEL_DATATYPE_UINT16_S),
-				SPINEL_PROP_CHANNEL_MANAGER_DELAY,
-				delay
-			);
-
-			mSettings[kWPANTUNDProperty_ChannelManagerDelay] = SettingsEntry(command, SPINEL_CAP_CHANNEL_MANAGER);
-
-			if (!mCapabilities.count(SPINEL_CAP_CHANNEL_MANAGER)) {
-				cb(kWPANTUNDStatus_FeatureNotSupported);
-			} else {
-				start_new_task(SpinelNCPTaskSendCommand::Factory(this)
-					.set_callback(cb)
-					.add_command(command)
-					.finish()
-				);
-			}
-
-		} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_ChannelManagerChannelSelect)) {
-			bool skip_check = any_to_bool(value);
-
-			if (!mCapabilities.count(SPINEL_CAP_CHANNEL_MANAGER)) {
-				cb(kWPANTUNDStatus_FeatureNotSupported);
-			} else {
-				start_new_task(SpinelNCPTaskSendCommand::Factory(this)
-					.set_callback(cb)
-					.add_command(SpinelPackData(
-						SPINEL_FRAME_PACK_CMD_PROP_VALUE_SET(SPINEL_DATATYPE_BOOL_S),
-						SPINEL_PROP_CHANNEL_MANAGER_CHANNEL_SELECT,
-						skip_check
-					))
-					.finish()
-				);
-			}
-
-		} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_ChannelManagerAutoSelectEnabled)) {
-			bool enabled = any_to_bool(value);
-			Data command = SpinelPackData(
-				SPINEL_FRAME_PACK_CMD_PROP_VALUE_SET(SPINEL_DATATYPE_BOOL_S),
-				SPINEL_PROP_CHANNEL_MANAGER_AUTO_SELECT_ENABLED,
-				enabled
-			);
-
-			mSettings[kWPANTUNDProperty_ChannelManagerAutoSelectEnabled] =
-				SettingsEntry(command, SPINEL_CAP_CHANNEL_MANAGER);
-
-			if (!mCapabilities.count(SPINEL_CAP_CHANNEL_MANAGER)) {
-				cb(kWPANTUNDStatus_FeatureNotSupported);
-			} else {
-				start_new_task(SpinelNCPTaskSendCommand::Factory(this)
-					.set_callback(cb)
-					.add_command(command)
-					.finish()
-				);
-			}
-
-		} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_ChannelManagerAutoSelectInterval)) {
-			uint32_t interval = any_to_int(value);
-			Data command = SpinelPackData(
-				SPINEL_FRAME_PACK_CMD_PROP_VALUE_SET(SPINEL_DATATYPE_UINT32_S),
-				SPINEL_PROP_CHANNEL_MANAGER_AUTO_SELECT_INTERVAL,
-				interval
-			);
-
-			mSettings[kWPANTUNDProperty_ChannelManagerAutoSelectInterval] =
-				SettingsEntry(command, SPINEL_CAP_CHANNEL_MANAGER);
-
-			if (!mCapabilities.count(SPINEL_CAP_CHANNEL_MANAGER)) {
-				cb(kWPANTUNDStatus_FeatureNotSupported);
-			} else {
-				start_new_task(SpinelNCPTaskSendCommand::Factory(this)
-					.set_callback(cb)
-					.add_command(command)
-					.finish()
-				);
-			}
-
-		} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_ChannelManagerSupportedChannelMask)) {
-			uint32_t mask = any_to_int(value);
-			Data mask_array = convert_channel_mask_to_array(mask);
-			Data command = SpinelPackData(
-				SPINEL_FRAME_PACK_CMD_PROP_VALUE_SET(SPINEL_DATATYPE_DATA_S),
-				SPINEL_PROP_CHANNEL_MANAGER_SUPPORTED_CHANNELS,
-				mask_array.data(),
-				mask_array.size()
-			);
-
-			mSettings[kWPANTUNDProperty_ChannelManagerSupportedChannelMask] =
-				SettingsEntry(command, SPINEL_CAP_CHANNEL_MANAGER);
-
-			if (!mCapabilities.count(SPINEL_CAP_CHANNEL_MANAGER)) {
-				cb(kWPANTUNDStatus_FeatureNotSupported);
-			} else {
-				start_new_task(SpinelNCPTaskSendCommand::Factory(this)
-					.set_callback(cb)
-					.add_command(command)
-					.finish()
-				);
-			}
-
-		} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_ChannelManagerFavoredChannelMask)) {
-			uint32_t mask = any_to_int(value);
-			Data mask_array = convert_channel_mask_to_array(mask);
-			Data command = SpinelPackData(
-				SPINEL_FRAME_PACK_CMD_PROP_VALUE_SET(SPINEL_DATATYPE_DATA_S),
-				SPINEL_PROP_CHANNEL_MANAGER_FAVORED_CHANNELS,
-				mask_array.data(),
-				mask_array.size()
-			);
-
-			mSettings[kWPANTUNDProperty_ChannelManagerFavoredChannelMask] =
-				SettingsEntry(command, SPINEL_CAP_CHANNEL_MANAGER);
-
-			if (!mCapabilities.count(SPINEL_CAP_CHANNEL_MANAGER)) {
-				cb(kWPANTUNDStatus_FeatureNotSupported);
-			} else {
-				start_new_task(SpinelNCPTaskSendCommand::Factory(this)
-					.set_callback(cb)
-					.add_command(command)
-					.finish()
-				);
-			}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 		} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_DatasetActiveTimestamp)) {
 			mLocalDataset.mActiveTimestamp = any_to_uint64(value);
