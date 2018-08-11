@@ -309,6 +309,27 @@ private:
 	void set_prop_DatasetCommand(const boost::any &value, CallbackWithStatus cb);
 	void set_prop_DaemonTickleOnHostDidWake(const boost::any &value, CallbackWithStatus cb);
 
+private:
+	void check_capability_prop_update(const boost::any &value, CallbackWithStatus cb, const std::string &prop_name,
+			unsigned int capability, PropUpdateHandler handler);
+
+	void register_insert_handler(const char *prop_name, PropUpdateHandler handler);
+	void register_insert_handler_capability(const char *prop_name, unsigned int capability, PropUpdateHandler handler);
+
+	void regsiter_all_insert_handlers(void);
+
+	void insert_prop_MACWhitelistEntries(const boost::any &value, CallbackWithStatus cb);
+	void insert_prop_MACBlacklistEntries(const boost::any &value, CallbackWithStatus cb);
+
+private:
+	void register_remove_handler(const char *prop_name, PropUpdateHandler handler);
+	void register_remove_handler_capability(const char *prop_name, unsigned int capability, PropUpdateHandler handler);
+
+	void regsiter_all_remove_handlers(void);
+
+	void remove_prop_MACWhitelistEntries(const boost::any &value, CallbackWithStatus cb);
+	void remove_prop_MACBlacklistEntries(const boost::any &value, CallbackWithStatus cb);
+
 public:
 
 	virtual void property_get_value(const std::string& key, CallbackWithStatusArg1 cb);

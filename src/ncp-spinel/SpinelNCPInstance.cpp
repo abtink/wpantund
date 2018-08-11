@@ -367,6 +367,8 @@ SpinelNCPInstance::SpinelNCPInstance(const Settings& settings) :
 
 	regsiter_all_get_handlers();
 	regsiter_all_set_handlers();
+	regsiter_all_insert_handlers();
+	regsiter_all_remove_handlers();
 
 	memset(mSteeringDataAddress, 0xff, sizeof(mSteeringDataAddress));
 
@@ -2515,12 +2517,6 @@ SpinelNCPInstance::set_spinel_prop(
 	Data command = SpinelPackData(SPINEL_FRAME_PACK_CMD_PROP_VALUE_SET(SPINEL_DATATYPE_NULL_S), prop_key);
 	int status = SpinelAppendAny(command, value, pack_type);
 
-//#!&*(@HKHK~*@)JL!J@~LJ!@L~J@LKJ!@L~J
-syslog(LOG_INFO, "ABTIN =============> set_spinel_prop: %s, %s, %c, %s, %d ",
-	prop_name.c_str(), spinel_prop_key_to_cstr(prop_key), pack_type, spinel_capability_to_cstr(capability),
-	save_in_settings);
-//#!&*(@HKHK~*@)JL!J@~LJ!@L~J@LKJ!@L~J
-
 	if (status != kWPANTUNDStatus_Ok) {
 		cb(status);
 	} else {
@@ -3316,12 +3312,99 @@ SpinelNCPInstance::property_set_value(
 	}
 }
 
+// ----------------------------------------------------------------------------
+// Property Insert Handlers
+
 void
-SpinelNCPInstance::property_insert_value(
-	const std::string& key,
-	const boost::any& value,
-	CallbackWithStatus cb
-) {
+SpinelNCPInstance::check_capability_prop_update(const boost::any &value, CallbackWithStatus cb,
+	const std::string &prop_name, unsigned int capability, PropUpdateHandler handler)
+{
+	if (mCapabilities.count(capability)) {
+		handler(value, cb, prop_name);
+	} else {
+		cb(kWPANTUNDStatus_FeatureNotSupported);
+	}
+}
+
+void
+SpinelNCPInstance::register_insert_handler(const char *prop_name, PropUpdateHandler handler)
+{
+	NCPInstanceBase::register_prop_insert_handler(prop_name, handler);
+}
+
+void
+SpinelNCPInstance::register_insert_handler_capability(const char *prop_name, unsigned int capability,
+	PropUpdateHandler handler)
+{
+	register_insert_handler(
+		prop_name,
+		boost::bind(&SpinelNCPInstance::check_capability_prop_update, this, _1, _2, _3, capability, handler));
+}
+
+void
+SpinelNCPInstance::regsiter_all_insert_handlers(void)
+{
+	register_insert_handler_capability(
+		kWPANTUNDProperty_MACWhitelistEntries,
+		SPINEL_CAP_MAC_WHITELIST,
+		boost::bind(&SpinelNCPInstance::insert_prop_MACWhitelistEntries, this, _1, _2));
+	register_insert_handler_capability(
+		kWPANTUNDProperty_MACBlacklistEntries,
+		SPINEL_CAP_MAC_WHITELIST,
+		boost::bind(&SpinelNCPInstance::insert_prop_MACBlacklistEntries, this, _1, _2));
+}
+
+void
+SpinelNCPInstance::insert_prop_MACWhitelistEntries(const boost::any &value, CallbackWithStatus cb)
+{
+	Data ext_address = any_to_data(value);
+	int8_t rssi = kWPANTUND_Whitelist_RssiOverrideDisabled;
+
+	if (ext_address.size() == sizeof(spinel_eui64_t)) {
+		start_new_task(SpinelNCPTaskSendCommand::Factory(this)
+			.set_callback(cb)
+			.add_command(
+				SpinelPackData(
+					SPINEL_FRAME_PACK_CMD_PROP_VALUE_INSERT(SPINEL_DATATYPE_EUI64_S SPINEL_DATATYPE_INT8_S),
+					SPINEL_PROP_MAC_WHITELIST,
+					ext_address.data(),
+					rssi
+				)
+			)
+			.finish()
+		);
+	} else {
+		cb(kWPANTUNDStatus_InvalidArgument);
+	}
+}
+
+void
+SpinelNCPInstance::insert_prop_MACBlacklistEntries(const boost::any &value, CallbackWithStatus cb)
+{
+	Data ext_address = any_to_data(value);
+	int8_t rssi = kWPANTUND_Whitelist_RssiOverrideDisabled;
+
+	if (ext_address.size() == sizeof(spinel_eui64_t)) {
+		start_new_task(SpinelNCPTaskSendCommand::Factory(this)
+			.set_callback(cb)
+			.add_command(
+				SpinelPackData(
+					SPINEL_FRAME_PACK_CMD_PROP_VALUE_INSERT(SPINEL_DATATYPE_EUI64_S SPINEL_DATATYPE_INT8_S),
+					SPINEL_PROP_MAC_BLACKLIST,
+					ext_address.data(),
+					rssi
+				)
+			)
+			.finish()
+		);
+	} else {
+		cb(kWPANTUNDStatus_InvalidArgument);
+	}
+}
+
+void
+SpinelNCPInstance::property_insert_value(const std::string &key, const boost::any &value, CallbackWithStatus cb)
+{
 	syslog(LOG_INFO, "property_insert_value: key: \"%s\"", key.c_str());
 
 	if (!mEnabled) {
@@ -3333,55 +3416,6 @@ SpinelNCPInstance::property_insert_value(
 		if (mVendorCustom.is_property_key_supported(key)) {
 			mVendorCustom.property_insert_value(key, value, cb);
 
-		} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_MACWhitelistEntries)) {
-			Data ext_address = any_to_data(value);
-			int8_t rssi = kWPANTUND_Whitelist_RssiOverrideDisabled;
-
-			if (!mCapabilities.count(SPINEL_CAP_MAC_WHITELIST)) {
-				cb(kWPANTUNDStatus_FeatureNotSupported);
-			} else {
-				if (ext_address.size() == sizeof(spinel_eui64_t)) {
-					start_new_task(SpinelNCPTaskSendCommand::Factory(this)
-						.set_callback(cb)
-						.add_command(
-							SpinelPackData(
-								SPINEL_FRAME_PACK_CMD_PROP_VALUE_INSERT(SPINEL_DATATYPE_EUI64_S SPINEL_DATATYPE_INT8_S),
-								SPINEL_PROP_MAC_WHITELIST,
-								ext_address.data(),
-								rssi
-							)
-						)
-						.finish()
-					);
-				} else {
-					cb(kWPANTUNDStatus_InvalidArgument);
-				}
-			}
-
-		} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_MACBlacklistEntries)) {
-			Data ext_address = any_to_data(value);
-			int8_t rssi = kWPANTUND_Whitelist_RssiOverrideDisabled;
-
-			if (!mCapabilities.count(SPINEL_CAP_MAC_WHITELIST)) {
-				cb(kWPANTUNDStatus_FeatureNotSupported);
-			} else {
-				if (ext_address.size() == sizeof(spinel_eui64_t)) {
-					start_new_task(SpinelNCPTaskSendCommand::Factory(this)
-						.set_callback(cb)
-						.add_command(
-							SpinelPackData(
-								SPINEL_FRAME_PACK_CMD_PROP_VALUE_INSERT(SPINEL_DATATYPE_EUI64_S SPINEL_DATATYPE_INT8_S),
-								SPINEL_PROP_MAC_BLACKLIST,
-								ext_address.data(),
-								rssi
-							)
-						)
-						.finish()
-					);
-				} else {
-					cb(kWPANTUNDStatus_InvalidArgument);
-				}
-			}
 		} else {
 			NCPInstanceBase::property_insert_value(key, value, cb);
 		}
@@ -3398,63 +3432,90 @@ SpinelNCPInstance::property_insert_value(
 	}
 }
 
+// ----------------------------------------------------------------------------
+// Property Remove Handlers
+
 void
-SpinelNCPInstance::property_remove_value(
-	const std::string& key,
-	const boost::any& value,
-	CallbackWithStatus cb
-) {
+SpinelNCPInstance::register_remove_handler(const char *prop_name, PropUpdateHandler handler)
+{
+	NCPInstanceBase::register_prop_remove_handler(prop_name, handler);
+}
+
+void
+SpinelNCPInstance::register_remove_handler_capability(const char *prop_name, unsigned int capability,
+	PropUpdateHandler handler)
+{
+	register_remove_handler(
+		prop_name,
+		boost::bind(&SpinelNCPInstance::check_capability_prop_update, this, _1, _2, _3, capability, handler));
+}
+
+void
+SpinelNCPInstance::regsiter_all_remove_handlers(void)
+{
+	register_remove_handler_capability(
+		kWPANTUNDProperty_MACWhitelistEntries,
+		SPINEL_CAP_MAC_WHITELIST,
+		boost::bind(&SpinelNCPInstance::remove_prop_MACWhitelistEntries, this, _1, _2));
+	register_remove_handler_capability(
+		kWPANTUNDProperty_MACBlacklistEntries,
+		SPINEL_CAP_MAC_WHITELIST,
+		boost::bind(&SpinelNCPInstance::remove_prop_MACBlacklistEntries, this, _1, _2));
+}
+
+void
+SpinelNCPInstance::remove_prop_MACWhitelistEntries(const boost::any &value, CallbackWithStatus cb)
+{
+	Data ext_address = any_to_data(value);
+
+	if (ext_address.size() == sizeof(spinel_eui64_t)) {
+		start_new_task(SpinelNCPTaskSendCommand::Factory(this)
+			.set_callback(cb)
+			.add_command(
+				SpinelPackData(
+					SPINEL_FRAME_PACK_CMD_PROP_VALUE_REMOVE(SPINEL_DATATYPE_EUI64_S),
+					SPINEL_PROP_MAC_WHITELIST,
+					ext_address.data()
+				)
+			)
+			.finish()
+		);
+	} else {
+		cb(kWPANTUNDStatus_InvalidArgument);
+	}
+}
+
+void
+SpinelNCPInstance::remove_prop_MACBlacklistEntries(const boost::any &value, CallbackWithStatus cb)
+{
+	Data ext_address = any_to_data(value);
+
+	if (ext_address.size() == sizeof(spinel_eui64_t)) {
+		start_new_task(SpinelNCPTaskSendCommand::Factory(this)
+			.set_callback(cb)
+			.add_command(
+				SpinelPackData(
+					SPINEL_FRAME_PACK_CMD_PROP_VALUE_REMOVE(SPINEL_DATATYPE_EUI64_S),
+					SPINEL_PROP_MAC_BLACKLIST,
+					ext_address.data()
+				)
+			)
+			.finish()
+		);
+	} else {
+		cb(kWPANTUNDStatus_InvalidArgument);
+	}
+}
+
+void
+SpinelNCPInstance::property_remove_value(const std::string &key, const boost::any &value, CallbackWithStatus cb)
+{
 	syslog(LOG_INFO, "property_remove_value: key: \"%s\"", key.c_str());
 
 	try {
 		if (mVendorCustom.is_property_key_supported(key)) {
 			mVendorCustom.property_remove_value(key, value, cb);
 
-		} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_MACWhitelistEntries)) {
-			Data ext_address = any_to_data(value);
-
-			if (!mCapabilities.count(SPINEL_CAP_MAC_WHITELIST)) {
-				cb(kWPANTUNDStatus_FeatureNotSupported);
-			} else {
-				if (ext_address.size() == sizeof(spinel_eui64_t)) {
-					start_new_task(SpinelNCPTaskSendCommand::Factory(this)
-						.set_callback(cb)
-						.add_command(
-							SpinelPackData(
-								SPINEL_FRAME_PACK_CMD_PROP_VALUE_REMOVE(SPINEL_DATATYPE_EUI64_S),
-								SPINEL_PROP_MAC_WHITELIST,
-								ext_address.data()
-							)
-						)
-						.finish()
-					);
-				} else {
-					cb(kWPANTUNDStatus_InvalidArgument);
-				}
-			}
-
-		} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_MACBlacklistEntries)) {
-			Data ext_address = any_to_data(value);
-
-			if (!mCapabilities.count(SPINEL_CAP_MAC_WHITELIST)) {
-				cb(kWPANTUNDStatus_FeatureNotSupported);
-			} else {
-				if (ext_address.size() == sizeof(spinel_eui64_t)) {
-					start_new_task(SpinelNCPTaskSendCommand::Factory(this)
-						.set_callback(cb)
-						.add_command(
-							SpinelPackData(
-								SPINEL_FRAME_PACK_CMD_PROP_VALUE_REMOVE(SPINEL_DATATYPE_EUI64_S),
-								SPINEL_PROP_MAC_BLACKLIST,
-								ext_address.data()
-							)
-						)
-						.finish()
-					);
-				} else {
-					cb(kWPANTUNDStatus_InvalidArgument);
-				}
-			}
 		} else {
 			NCPInstanceBase::property_remove_value(key, value, cb);
 		}
