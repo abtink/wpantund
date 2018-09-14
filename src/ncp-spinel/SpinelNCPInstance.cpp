@@ -49,6 +49,9 @@ using namespace wpantund;
 
 WPANTUND_DEFINE_NCPINSTANCE_PLUGIN(spinel, SpinelNCPInstance);
 
+namespace nl {
+namespace wpantund {
+
 void
 SpinelNCPInstance::handle_ncp_debug_stream(const uint8_t* data_ptr, int data_len)
 {
@@ -261,7 +264,7 @@ SpinelNCPInstance::start_new_task(const boost::shared_ptr<SpinelNCPTask> &task)
 }
 
 int
-nl::wpantund::spinel_status_to_wpantund_status(int spinel_status)
+spinel_status_to_wpantund_status(int spinel_status)
 {
 	wpantund_status_t ret;
 	switch (spinel_status) {
@@ -305,7 +308,7 @@ nl::wpantund::spinel_status_to_wpantund_status(int spinel_status)
 }
 
 int
-nl::wpantund::peek_ncp_callback_status(int event, va_list args)
+peek_ncp_callback_status(int event, va_list args)
 {
 	int ret = 0;
 
@@ -5497,3 +5500,7 @@ SpinelNCPInstance::process(void)
 		}
 	}
 }
+
+}; // namespace wpantund
+}; // namespace nl
+
