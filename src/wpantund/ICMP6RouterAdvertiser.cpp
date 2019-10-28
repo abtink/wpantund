@@ -38,7 +38,7 @@
 #include "NCPTypes.h"
 #include "ICMP6RouterAdvertiser.h"
 #include "NCPInstanceBase.h"
-
+#include "any-to.h"
 
 using namespace nl;
 using namespace nl::wpantund;
@@ -46,11 +46,11 @@ using namespace nl::wpantund;
 nl::wpantund::ICMP6RouterAdvertiser::ICMP6RouterAdvertiser(NCPInstanceBase* instance)
 	: mInstance(instance)
 	, mNetifMgmtFD(netif_mgmt_open())
-	, mEnabled(false)
+	, mEnabled(true)
 	, mTxPeriod(DEFAULT_ROUTER_ADV_TX_PERIOD)
 	, mDefaultRoutePreference(0)
-	, mDefaultRouteLifetime(0)
-	, mShouldAddRouteInfoOption(true)
+	, mDefaultRouteLifetime(33)
+	, mShouldAddRouteInfoOption(false)
 	, mStateChanged(false)
 {
 	mSocket = socket(AF_INET6, SOCK_RAW, IPPROTO_ICMPV6);
@@ -62,6 +62,8 @@ nl::wpantund::ICMP6RouterAdvertiser::ICMP6RouterAdvertiser(NCPInstanceBase* inst
 			syslog(LOG_WARNING, "Failed to set multicast hops on socket");
 		}
 	}
+
+	add_demo_defaults();
 }
 
 nl::wpantund::ICMP6RouterAdvertiser::~ICMP6RouterAdvertiser(void)
@@ -71,10 +73,19 @@ nl::wpantund::ICMP6RouterAdvertiser::~ICMP6RouterAdvertiser(void)
 }
 
 void
+nl::wpantund::ICMP6RouterAdvertiser::add_demo_defaults(void)
+{
+	add_netif("wlan0");
+	add_prefix(any_to_ipv6(std::string("fd00:802:11::")), 64, 3600, 3600, /* on-link */ true, /* auto-con */ true);
+}
+
+void
 nl::wpantund::ICMP6RouterAdvertiser::clear(void)
 {
 	clear_netifs();
 	clear_prefixes();
+
+	add_demo_defaults();
 }
 
 void
@@ -166,11 +177,13 @@ void
 nl::wpantund::ICMP6RouterAdvertiser::send_router_advert(const char *netif_name)
 {
 	enum {
+		REACHABLE_TIME = 33,
 		ROUTE_INFO_OPTION_TYPE = 24,
 		ROUTE_INFO_OPTION_PRF_HIGH   = (0x1 << 3),
 		ROUTE_INFO_OPTION_PRF_MEDIUM = (0x0 << 3),
 		ROUTE_INFO_OPTION_PRF_LOW    = (0x3 << 3),
 		ROUTE_INFO_OPTION_LIFETIME   = 3600, // in seconds
+
 
 		HW_ADDRESS_SIZE = 6,
 	};
@@ -235,7 +248,7 @@ nl::wpantund::ICMP6RouterAdvertiser::send_router_advert(const char *netif_name)
 	}
 
 	ra.nd_ra_router_lifetime = htons(mDefaultRouteLifetime);
-	ra.nd_ra_reachable = htonl(ROUTE_INFO_OPTION_LIFETIME);
+	ra.nd_ra_reachable = htonl(REACHABLE_TIME);
 	ra.nd_ra_retransmit = htonl(0);
 
 	msg.append(reinterpret_cast<uint8_t *>(&ra), sizeof(ra));

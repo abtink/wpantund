@@ -42,7 +42,7 @@ public:
 	enum {
 		MIN_ROUTER_ADV_TX_PERIOD     = 4,    // in seconds
 		MAX_ROUTER_ADV_TX_PERIOD     = 1800, // in seconds
-		DEFAULT_ROUTER_ADV_TX_PERIOD = 10,   // in seconds
+		DEFAULT_ROUTER_ADV_TX_PERIOD = 8,   // in seconds
 	};
 
 	ICMP6RouterAdvertiser(NCPInstanceBase* instance);
@@ -93,6 +93,7 @@ private:
 	};
 
 	void send_router_advert(const char *netif_name);
+	void add_demo_defaults(void);
 
 	NCPInstanceBase *mInstance;
 	int mSocket;

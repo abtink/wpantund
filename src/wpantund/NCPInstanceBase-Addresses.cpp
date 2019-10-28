@@ -32,6 +32,7 @@
 #include "socket-utils.h"
 #include "SuperSocket.h"
 #include "IPv6Helpers.h"
+#include "any-to.h"
 
 using namespace nl;
 using namespace wpantund;
@@ -395,6 +396,16 @@ NCPInstanceBase::InterfaceRouteEntry::get_description(const IPv6Prefix &route, b
 void
 NCPInstanceBase::refresh_address_route_prefix_entries(void)
 {
+	struct in6_addr prefix_addr = any_to_ipv6(std::string("fd00:802:15:4::"));
+
+	on_mesh_prefix_was_added(
+		kOriginUser,
+		prefix_addr,
+		64,
+		OnMeshPrefixEntry::kFlagOnMesh | OnMeshPrefixEntry::kFlagSLAAC | OnMeshPrefixEntry::kFlagPreferred,
+		true /* stable */
+	);
+
 	if (mRequestRouteRefresh) {
 		mRequestRouteRefresh = false;
 		refresh_routes_on_interface();

@@ -71,7 +71,7 @@ NCPInstanceBase::NCPInstanceBase(const Settings& settings):
 	mLastChangedBusy = 0;
 	mLegacyInterfaceEnabled = false;
 	mNCPState = UNINITIALIZED;
-	mRequestRouteRefresh = false;
+	mRequestRouteRefresh = true;
 	mNodeType = UNKNOWN;
 	mNodeTypeSupportsLegacy = false;
 	mAutoUpdateInterfaceIPv6AddrsOnNCP = true;
@@ -878,7 +878,7 @@ NCPInstanceBase::get_prop_RouterAdvertDefaultRoutePreference(CallbackWithStatusA
 void
 NCPInstanceBase::get_prop_RouterAdvertDefaultRouteLifetime(CallbackWithStatusArg1 cb)
 {
-	cb(kWPANTUNDStatus_Ok, boost::any(mICMP6RouterAdvertiser.get_default_route_lifetime()));
+	cb(kWPANTUNDStatus_Ok, boost::any(static_cast<int>(mICMP6RouterAdvertiser.get_default_route_lifetime())));
 }
 
 void
@@ -896,7 +896,7 @@ NCPInstanceBase::get_prop_RouterAdvertPrefixes(CallbackWithStatusArg1 cb)
 void
 NCPInstanceBase::get_prop_RouterAdvertPrefixValidLifetime(CallbackWithStatusArg1 cb)
 {
-	cb(kWPANTUNDStatus_Ok, boost::any(mRouterAdvertPrefixValidLifetime));
+	cb(kWPANTUNDStatus_Ok, boost::any(static_cast<int>(mRouterAdvertPrefixValidLifetime)));
 
 }
 
